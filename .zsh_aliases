@@ -1,0 +1,58 @@
+function deploy_g2() {
+   cd ~/toast/git-repos/toast-services
+   git checkout development
+   git pull
+   oktoast production
+   ./deploy_g2_service.sh prod $1 1 $2
+}
+
+function destroy_g2() {
+   cd ~/toast/git-repos/toast-services
+   git checkout development
+   git pull
+   oktoast production
+   ./destroy_g2_service.sh prod $1 1 $2
+}
+
+function deploy_spa() {
+   cd ~/toast/git-repos/toast-services
+   git checkout development
+   git pull
+   oktoast production
+   ./deploy_spa.sh prod $1 $2
+}
+
+function destroy_spa() {
+   cd ~/toast/git-repos/toast-services
+   git checkout development
+   git pull
+   oktoast production
+   ./destroy_spa.sh prod $1 $2
+}
+
+parse_git_branch() {
+    git branch 2> /dev/null | sed -n -e 's/^\* \(.*\)/\1/p'
+}
+
+function gitall() {
+    git add .
+    if [ "$1" != "" ]
+    then
+        git commit -m "$1"
+    else
+        git commit -m update # default commit message is `update`
+    fi # closing statement of if-else block
+    git push --no-verify --set-upstream origin $(parse_git_branch)
+}
+
+function clear_branches() {
+    git branch | grep -v "main" | xargs git branch -D
+}
+
+function git_undo() {
+    git reset HEAD~1
+}
+
+function git_undo_hard {
+    git reset --hard HEAD~1
+}
