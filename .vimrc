@@ -1,4 +1,7 @@
-nnoremap " " <Nop>
+"" Source your .vimrc
+"source ~/.vimrc
+
+nnoremap <SPACE> <Nop>
 let mapleader=" "
 
 " show relative line numbers except on your current line show absolute line number
@@ -14,7 +17,7 @@ map Y y$
 " copy / paste to / from system clipboard with leader y / p
 " map <leader>y \"+y
 " map <leader>p \"+p
-set clipboard=unnamedplus,unnamed " integrate with system clipboard
+set clipboard=unnamedplus,unnamed,ideaput " integrate with system clipboard
 
 " paste over rest of line with leader p
 nnoremap <leader>p v$<Left>pgvy
@@ -28,6 +31,14 @@ noremap <leader>j J
 noremap J <C-d>zz
 noremap K <C-u>zz
 
+noremap <leader>d "_d
+noremap <leader>D "_d$
+
+nnoremap <leader>o o<Esc>
+nnoremap <leader>O O<Esc>
+
+inoremap jj <Esc>
+
 " Show a few lines of context around the cursor. Note that this makes the
 " text scroll if you mouse-click near the start or end of the window.
 set scrolloff=5 sidescrolloff=10
@@ -39,7 +50,3 @@ set wrapscan                      " searches wrap around the end of the file
 
 " Don't use Ex mode, use Q for formatting.
 map Q gq
-
-" edit vim config
-nnoremap <leader>vv :e ~/.vimrc<CR>
-nnoremap <leader>vr :source ~/.vimrc<CR>

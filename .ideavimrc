@@ -31,6 +31,14 @@ noremap <leader>j J
 noremap J <C-d>zz
 noremap K <C-u>zz
 
+noremap <leader>d "_d
+noremap <leader>D "_d$
+
+nnoremap <leader>o o<Esc>
+nnoremap <leader>O O<Esc>
+
+inoremap jj <Esc>
+
 " Show a few lines of context around the cursor. Note that this makes the
 " text scroll if you mouse-click near the start or end of the window.
 set scrolloff=5 sidescrolloff=10
@@ -51,9 +59,9 @@ nnoremap <leader>vr :source ~/.ideavimrc<CR>
 "" -- Map IDE actions to IdeaVim -- https://jb.gg/abva4t
 " Find more examples here: https://jb.gg/share-ideavimrc
 
-"" Map <leader>d to start debug
-map <leader>d <Action>(Debug)
-map <leader>f <Action>(Run)
+"" Map <leader>R to start debug
+map <leader>R <Action>(Debug)
+map <leader>r <Action>(Run)
 
 "" Map <leader>b to toggle the breakpoint on the current line
 map <leader>b <Action>(ToggleLineBreakpoint)
@@ -77,15 +85,15 @@ imap <C-p> <C-o>:action ParameterInfo<CR>
 map gh <Action>(ShowErrorDescription)
 
 map <leader>c :action CommentByLineComment<CR>
-map <leader>re :action RenameElement<CR>
+map <leader>n :action RenameElement<CR>
 nmap <leader>ev :action IntroduceVariable<CR>
 vmap <leader>ev :action IntroduceVariable<CR>
 nmap <leader>em :action ExtractMethod<CR>
 vmap <leader>em :action ExtractMethod<CR>
 nmap <leader>m :action Move<CR>
-nmap <leader>o :action OptimizeImports<CR> \| :action ReformatCode<CR> \| :action Javascript.Linters.EsLint.Fix<CR>
-nmap <leader>G :action Generate<CR>
+nmap <leader>f :action OptimizeImports<CR> \| :action ReformatCode<CR> \| :action Javascript.Linters.EsLint.Fix<CR>
 nmap <leader>F :action ReformatCode<CR>
+nmap <leader>G :action Generate<CR>
 
 nmap <, :action MoveElementLeft<CR>
 nmap >, :action MoveElementRight<CR>
