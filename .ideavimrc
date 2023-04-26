@@ -73,6 +73,8 @@ map gi :action GotoImplementation<CR>
 map gs :action GotoSuperMethod<CR>
 map gf :action Find<CR>
 map gF :action FindInPath<CR>
+map gv :action Replace<CR>
+map gv :action ReplaceInPath<CR>
 map gt :action SearchEverywhere<CR>
 
 nmap <leader>l :action NextTab<CR>
@@ -91,7 +93,7 @@ vmap <leader>ev :action IntroduceVariable<CR>
 nmap <leader>em :action ExtractMethod<CR>
 vmap <leader>em :action ExtractMethod<CR>
 nmap <leader>m :action Move<CR>
-nmap <leader>f :action OptimizeImports<CR> \| :action ReformatCode<CR> \| :action Javascript.Linters.EsLint.Fix<CR>
+nmap <leader>f :action OptimizeImports<CR> \| :action ReformatCode<CR> \| :action Javascript.Linters.EsLint.Fix<CR> \| :action TsLintFileFixAction<CR>
 nmap <leader>F :action ReformatCode<CR>
 nmap <leader>G :action Generate<CR>
 
