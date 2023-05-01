@@ -34,8 +34,8 @@ noremap K <C-u>zz
 noremap <leader>d "_d
 noremap <leader>D "_d$
 
-nnoremap <leader>o o<Esc>
-nnoremap <leader>O O<Esc>
+nnoremap <leader>o o<Esc>V99<
+nnoremap <leader>O O<Esc>V99<
 
 inoremap jj <Esc>
 
