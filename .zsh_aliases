@@ -1,33 +1,47 @@
-function deploy_g2() {
+function toast_services() {
    cd ~/toast/git-repos/toast-services
    git checkout development
    git pull
-   oktoast production
+}
+
+function g2x() {
+   toast_services
    ./deploy_g2_service.sh prod $1 1 $2
 }
 
-function destroy_g2() {
-   cd ~/toast/git-repos/toast-services
-   git checkout development
-   git pull
+function g2() {
    oktoast production
+   g2x
+}
+
+function dg2x() {
+   toast_services
    ./destroy_g2_service.sh prod $1 1 $2
 }
 
-function deploy_spa() {
-   cd ~/toast/git-repos/toast-services
-   git checkout development
-   git pull
+function dg2() {
    oktoast production
+   dg2x
+}
+
+function spax() {
+   toast_services
    ./deploy_spa.sh prod $1 $2
 }
 
-function destroy_spa() {
-   cd ~/toast/git-repos/toast-services
-   git checkout development
-   git pull
+function spa() {
    oktoast production
+   spax
+}
+
+function dspax() {
+   toast_services
    ./destroy_spa.sh prod $1 $2
+}
+
+function dspa() {
+   oktoast production
+   dspax
 }
 
 parse_git_branch() {
