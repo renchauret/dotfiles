@@ -11,7 +11,7 @@ function g2x() {
 
 function g2() {
    oktoast production
-   g2x
+   g2x $1 $2
 }
 
 function dg2x() {
@@ -21,7 +21,7 @@ function dg2x() {
 
 function dg2() {
    oktoast production
-   dg2x
+   dg2x $1 $2
 }
 
 function spax() {
@@ -31,7 +31,7 @@ function spax() {
 
 function spa() {
    oktoast production
-   spax
+   spax $1 $2
 }
 
 function dspax() {
@@ -41,7 +41,7 @@ function dspax() {
 
 function dspa() {
    oktoast production
-   dspax
+   dspax $1 $2
 }
 
 parse_git_branch() {
