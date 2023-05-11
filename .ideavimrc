@@ -73,8 +73,8 @@ map gi :action GotoImplementation<CR>
 map gs :action GotoSuperMethod<CR>
 map gf :action Find<CR>
 map gF :action FindInPath<CR>
-map gv :action Replace<CR>
-map gV :action ReplaceInPath<CR>
+map gy :action Replace<CR>
+map gY :action ReplaceInPath<CR>
 map gt :action SearchEverywhere<CR>
 
 nmap <leader>l :action NextTab<CR>
