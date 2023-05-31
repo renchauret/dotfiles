@@ -27,15 +27,21 @@ vnoremap < <gv
 vnoremap > >gv
 vnoremap = =gv
 
-noremap <leader>j J
+nnoremap <leader>o o<Esc>V99<
+nnoremap <leader>O O<Esc>V99<
+
+noremap <leader>b J
+noremap <leader>B gJ
 noremap J <C-d>zz
 noremap K <C-u>zz
+noremap <leader>j 10jzz
+noremap <leader>k 10kzz
+
+noremap <leader>u U
+noremap U <C-r>
 
 noremap <leader>d "_d
 noremap <leader>D "_d$
-
-nnoremap <leader>o o<Esc>V99<
-nnoremap <leader>O O<Esc>V99<
 
 inoremap jj <Esc>
 
@@ -64,7 +70,7 @@ map <leader>R <Action>(Debug)
 map <leader>r <Action>(Run)
 
 "" Map <leader>b to toggle the breakpoint on the current line
-map <leader>b <Action>(ToggleLineBreakpoint)
+map gb <Action>(ToggleLineBreakpoint)
 
 nmap <leader>? :action GotoAction<CR>
 
