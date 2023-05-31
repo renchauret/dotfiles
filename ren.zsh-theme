@@ -41,7 +41,7 @@ directory() {
    then
       NEXT_ARROW_BG="139"
    fi
-   echo "$(arrow_start) %3~ $(arrow_end)"
+   echo "$(arrow_start) %2~ $(arrow_end)"
 }
 
 current_time() {
