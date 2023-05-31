@@ -17,7 +17,7 @@ map Y y$
 " copy / paste to / from system clipboard with leader y / p
 " map <leader>y \"+y
 " map <leader>p \"+p
-set clipboard=unnamedplus,unnamed,ideaput " integrate with system clipboard
+set clipboard=unnamedplus,unnamed " integrate with system clipboard
 
 " paste over rest of line with leader p
 nnoremap <leader>p v$<Left>pgvy
@@ -27,15 +27,21 @@ vnoremap < <gv
 vnoremap > >gv
 vnoremap = =gv
 
-noremap <leader>j J
+nnoremap <leader>o o<Esc>V99<
+nnoremap <leader>O O<Esc>V99<
+
+noremap <leader>b J
+noremap <leader>B gJ
 noremap J <C-d>zz
 noremap K <C-u>zz
+noremap <leader>j 10jzz
+noremap <leader>k 10kzz
+
+noremap <leader>u U
+noremap U <C-r>
 
 noremap <leader>d "_d
 noremap <leader>D "_d$
-
-nnoremap <leader>o o<Esc>V99<
-nnoremap <leader>O O<Esc>V99<
 
 inoremap jj <Esc>
 
@@ -50,3 +56,7 @@ set wrapscan                      " searches wrap around the end of the file
 
 " Don't use Ex mode, use Q for formatting.
 map Q gq
+
+" edit vim config
+nnoremap <leader>vv :e ~/.vimrc<CR>
+nnoremap <leader>vr :source ~/.vimrc<CR>
