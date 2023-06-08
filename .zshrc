@@ -100,3 +100,8 @@ source $ZSH/oh-my-zsh.sh
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 . ~/.zsh_aliases
+export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
+export DOCKER_HOST=unix:///Users/ren/.colima/default/docker.sock
+
+# allows LD FF autocomplete
+eval "$(_TOAST_FEATURE_FLAGS_COMPLETE=source_zsh toast-feature-flags --no-update)"
