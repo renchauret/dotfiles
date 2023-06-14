@@ -52,9 +52,9 @@ function gitall() {
     git add .
     if [ "$1" != "" ]
     then
-        git commit -m "$1"
+        git commit -m "$1" --no-verify
     else
-        git commit -m update # default commit message is `update`
+        git commit -m update # default commit message is `update` --no-verify
     fi # closing statement of if-else block
     git push --no-verify --set-upstream origin $(parse_git_branch)
 }
