@@ -31,7 +31,7 @@ nnoremap <leader>o o<Esc>V99<
 nnoremap <leader>O O<Esc>V99<
 
 noremap <leader>b J
-noremap <leader>B gJ
+noremap <leader>B Jx
 noremap J <C-d>zz
 noremap K <C-u>zz
 noremap <leader>j 10jzz
