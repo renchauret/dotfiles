@@ -92,7 +92,7 @@ nmap <C-p> :action ParameterInfo<CR>
 imap <C-p> <C-o>:action ParameterInfo<CR>
 map gh <Action>(ShowErrorDescription)
 
-map <leader>c :action CommentByLineComment<CR>
+map <leader>c V:action CommentByLineComment<CR><Esc>
 map <leader>n :action RenameElement<CR>
 nmap <leader>ev :action IntroduceVariable<CR>
 vmap <leader>ev :action IntroduceVariable<CR>
