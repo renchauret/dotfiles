@@ -9,7 +9,8 @@ set relativenumber
 set number
 
 " when pasting, the text you are highlighting does not replace the text in your register
-vnoremap p pgvy
+" vnoremap p pgvy
+vnoremap p "_dP
 
 " make Y behave like D and C, yanking til end of line
 map Y y$
@@ -53,6 +54,7 @@ set ignorecase                    " ignore case in search patterns
 set smartcase                     " no ignore case when pattern is uppercase
 set incsearch                     " show search results while typing
 set wrapscan                      " searches wrap around the end of the file
+set hlsearch
 
 " Don't use Ex mode, use Q for formatting.
 map Q gq
