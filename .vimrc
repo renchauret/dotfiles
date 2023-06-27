@@ -31,7 +31,7 @@ nnoremap <leader>o o<Esc>V99<
 nnoremap <leader>O O<Esc>V99<
 
 noremap <leader>b J
-noremap <leader>B Jx
+noremap <leader>B gJ
 noremap J <C-d>zz
 noremap K <C-u>zz
 noremap <leader>j 10jzz
@@ -53,6 +53,7 @@ set ignorecase                    " ignore case in search patterns
 set smartcase                     " no ignore case when pattern is uppercase
 set incsearch                     " show search results while typing
 set wrapscan                      " searches wrap around the end of the file
+set hlsearch
 
 " Don't use Ex mode, use Q for formatting.
 map Q gq
