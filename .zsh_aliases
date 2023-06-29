@@ -1,3 +1,10 @@
+function tg() {
+   cd ~/toast/git-repos
+}
+function home() {
+   cd ~
+}
+
 function toast_services() {
    cd ~/toast/git-repos/toast-services
    git checkout development
@@ -44,11 +51,15 @@ function dspa() {
    dspax $1 $2
 }
 
+function pd() {
+   pushd $1
+}
+
 parse_git_branch() {
     git branch 2> /dev/null | sed -n -e 's/^\* \(.*\)/\1/p'
 }
 
-function gitall() {
+function ga() {
     git add .
     if [ "$1" != "" ]
     then
