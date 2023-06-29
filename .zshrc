@@ -74,6 +74,9 @@ plugins=(git)
 
 source $ZSH/oh-my-zsh.sh
 
+unsetopt inc_append_history
+unsetopt share_history
+
 # User configuration
 
 # export MANPATH="/usr/local/man:$MANPATH"
@@ -105,3 +108,5 @@ export DOCKER_HOST=unix:///Users/ren/.colima/default/docker.sock
 
 # allows LD FF autocomplete
 eval "$(_TOAST_FEATURE_FLAGS_COMPLETE=source_zsh toast-feature-flags --no-update)"
+
+export XDG_CONFIG_HOME=$HOME
