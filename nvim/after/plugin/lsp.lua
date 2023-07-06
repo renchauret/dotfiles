@@ -1,11 +1,30 @@
 local lsp = require('lsp-zero')
 
-lsp.preset('recommended')
+-- 'recommended' preset without K mapping, replaced by gk below
+lsp.preset({
+  float_border = 'rounded',
+  call_servers = 'local',
+  configure_diagnostics = true,
+  setup_servers_on_start = true,
+  set_lsp_keymaps = {
+    preserve_mappings = false,
+    omit = {"K"},
+  },
+  manage_nvim_cmp = {
+    set_sources = 'recommended',
+    set_basic_mappings = true,
+    set_extra_mappings = false,
+    use_luasnip = true,
+    set_format = true,
+    documentation_window = true,
+  }
+})
 
 lsp.ensure_installed({
-	'tsserver',
-	'eslint',
-	'rust_analyzer'
+  'tsserver',
+  'eslint',
+  'kotlin_language_server',
+  'lua_ls'
 })
 
 local cmp = require('cmp')
@@ -21,6 +40,7 @@ lsp.setup_nvim_cmp({
 
 lsp.on_attach(function(client, bufnr)
 	local opts = {buffer = bufnr, remap = false}
+  vim.keymap.set("n", "gk", function() vim.lsp.buf.hover() end, opts)
 	vim.keymap.set("n", "gd", function() vim.lsp.buf.definition() end, opts)
 	vim.keymap.set("n", "gy", function() vim.lsp.buf.references() end, opts)
 	vim.keymap.set("n", "<leader>n", function() vim.lsp.buf.rename() end, opts)
