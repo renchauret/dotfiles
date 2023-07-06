@@ -21,9 +21,9 @@ lsp.preset({
 })
 
 lsp.ensure_installed({
-  'tsserver',
-  'eslint',
-  'kotlin_language_server',
+	'tsserver',
+	'eslint',
+	'kotlin_language_server',
   'lua_ls'
 })
 
