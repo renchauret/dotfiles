@@ -110,3 +110,8 @@ export DOCKER_HOST=unix:///Users/ren/.colima/default/docker.sock
 eval "$(_TOAST_FEATURE_FLAGS_COMPLETE=source_zsh toast-feature-flags --no-update)"
 
 export XDG_CONFIG_HOME=$HOME
+
+if [ $ITERM_SESSION_ID ]; then
+  export PROMPT_COMMAND='echo -ne "\033];${PWD##*/}\007"; ':"$PROMPT_COMMAND";
+fi
+
