@@ -60,7 +60,7 @@ function gb() {
 }
 
 function nv() {
-   neovim .
+   nvim .
 }
 
 function gpu() {
