@@ -13,11 +13,14 @@ vim.keymap.set('n', 'Q', '<nop>')
 vim.keymap.set('n', '<C-f>', '<cmd>silent !tmux neww tmux-sessionizer<CR>')
 vim.keymap.set('n', '<leader>f', vim.lsp.buf.format)
 
-vim.keymap.set('n', '<leader>w', function() vim.cmd('w') end)
 vim.keymap.set('n', '<leader><leader>', function()
     vim.cmd('w')
     vim.cmd('so')
 end)
+vim.keymap.set('n', '<leader>w', function() vim.cmd('w') end)
+vim.keymap.set('n', '<leader>W', function() vim.cmd('wq') end)
+vim.keymap.set('n', '<leader>q', function() vim.cmd('q') end)
+vim.keymap.set('n', '<leader>Q', function() vim.cmd('q!') end)
 
 vim.keymap.set('n', 'gl', '<C-^>')
 
@@ -30,10 +33,6 @@ vim.keymap.set('n', '<C-j>', '<C-w>j')
 vim.keymap.set('n', '<C-h>', '<C-w>h')
 vim.keymap.set('n', '<C-l>', '<C-w>l')
 
-vim.keymap.set('n', '<leader>q', ':q<CR>')
-vim.keymap.set('n', '<leader>Q', ':q!<CR>')
-
 vim.keymap.set('n', '<leader>s', [[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]])
 vim.keymap.set('n', 'gy', ':%s/')
 vim.keymap.set('n', '<leader>H', ':noh<CR>')
-
