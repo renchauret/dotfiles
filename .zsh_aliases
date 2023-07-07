@@ -1,6 +1,11 @@
+alias vim="nvim"
+alias vi="nvim"
+alias oldvim="vim"
+
 function tg() {
    cd ~/toast/git-repos
 }
+
 function home() {
    cd ~
 }
