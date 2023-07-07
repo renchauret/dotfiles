@@ -24,7 +24,8 @@ lsp.ensure_installed({
 	'tsserver',
 	'eslint',
 	'kotlin_language_server',
-  'lua_ls'
+  'lua_ls',
+  'bashls'
 })
 
 local cmp = require('cmp')
