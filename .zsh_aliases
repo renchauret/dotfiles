@@ -100,6 +100,5 @@ function git_undo_hard() {
 }
 
 function awake() {
-    cd ~/documents
-    python3 awake.py
+    python3 ~/documents/awake.py
 }
