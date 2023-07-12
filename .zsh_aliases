@@ -95,6 +95,11 @@ function git_undo() {
     git reset HEAD~1
 }
 
-function git_undo_hard {
+function git_undo_hard() {
     git reset --hard HEAD~1
+}
+
+function awake() {
+    cd ~/documents
+    python3 awake.py
 }
