@@ -76,15 +76,23 @@ parse_git_branch() {
     git branch 2> /dev/null | sed -n -e 's/^\* \(.*\)/\1/p'
 }
 
-function gacp() {
+function gac() {
     git add .
     if [ "$1" != "" ]
     then
         git commit -m "$1" --no-verify
     else
-        git commit -m update # default commit message is `update` --no-verify
-    fi # closing statement of if-else block
+        git commit -m "update" --no-verify
+    fi
+}
+
+function gpx() {
     git push --no-verify --set-upstream origin $(parse_git_branch)
+}
+
+function gacp() {
+    gac $1
+    gpx
 }
 
 function clear_branches() {
