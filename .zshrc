@@ -104,7 +104,7 @@ unsetopt share_history
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 . ~/.zsh_aliases
 export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
-export DOCKER_HOST=unix:///Users/ren/.colima/default/docker.sock
+export DOCKER_HOST=unix:///Users/renaud.chauret/.colima/default/docker.sock
 
 export XDG_CONFIG_HOME=$HOME
 
