@@ -19,25 +19,25 @@ MONITORS = {
   2: Monitor(-1080, 0, -228, 1691)
 }
 
-secondsRemaining = sys.maxsize
+seconds_remaining = sys.maxsize
 if len(sys.argv) > 1:
-  secondsRemaining = float(sys.argv[1]) * 60 * 60
+  seconds_remaining = float(sys.argv[1]) * 60 * 60
 
 if len(sys.argv) > 2:
-  lenMonitors = int(sys.argv[2])
-  keysToDelete = []
-  if lenMonitors > len(MONITORS):
+  len_monitors = int(sys.argv[2])
+  keys_to_delete = []
+  if len_monitors > len(MONITORS):
     for key in MONITORS:
-      if key > lenMonitors:
-        keysToDelete.push(key)
-    for key in keysToDelete:
+      if key > len_monitors:
+        keys_to_delete.push(key)
+    for key in keys_to_delete:
       del MONITORS[key]
 
 def identify_monitor(x, y):
-  for monitorDef in MONITORS.items():
-    monitor = monitorDef[1]
+  for monitor_def in MONITORS.items():
+    monitor = monitor_def[1]
     if x >= monitor.x_min and x <= monitor.x_max and y >= monitor.y_min and y <= monitor.y_max:
-      return monitorDef[0]
+      return monitor_def[0]
   return 0
 
 def append_if_valid(moves, x, y):
@@ -60,7 +60,20 @@ def valid_moves(x, y):
 p.FAILSAFE = False
 
 SECONDS_BETWEEN_MOVES = 599
-while secondsRemaining > 0:
+while seconds_remaining > 0:
+  minutes_left = math.floor(seconds_remaining / 60)
+  seconds_left = int(seconds_remaining - minutes_left)
+  hours_left = math.floor(minutes_left / 60)
+  minutes_left = minutes_left - hours_left * 60
+  print('hours remaining: ' + str(hours_left) + ':' + str(minutes_left) + ':' + str(seconds_left))
+
+  seconds_to_wait = SECONDS_BETWEEN_MOVES
+  if seconds_remaining < SECONDS_BETWEEN_MOVES:
+    seconds_to_wait = seconds_remaining 
+  # time between moves is in seconds
+  t.sleep(seconds_to_wait)
+  seconds_remaining = seconds_remaining - seconds_to_wait 
+
   x, y = p.position()
 
   potential_moves = valid_moves(x, y)
@@ -73,16 +86,4 @@ while secondsRemaining > 0:
   # print('potential moves: ' + str(potential_moves))
   print('next: ' + str(move[0]) + ', ' + str(move[1]))
 
-  minutesRemaining = int(secondsRemaining / 60)
-  hoursRemaining = math.floor(minutesRemaining / 60)
-  minutesRemaining = minutesRemaining - hoursRemaining * 60
-  print('hours remaining: ' + str(hoursRemaining) + ':' + str(minutesRemaining))
-
   p.moveTo(move[0], move[1])
-
-  secondsToWait = SECONDS_BETWEEN_MOVES
-  if secondsRemaining < SECONDS_BETWEEN_MOVES:
-    secondsToWait = secondsRemaining
-  # time between moves is in seconds
-  t.sleep(secondsToWait)
-  secondsRemaining = secondsRemaining - secondsToWait
