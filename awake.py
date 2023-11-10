@@ -62,7 +62,7 @@ p.FAILSAFE = False
 SECONDS_BETWEEN_MOVES = 599
 while seconds_remaining > 0:
   minutes_left = math.floor(seconds_remaining / 60)
-  seconds_left = int(seconds_remaining - minutes_left)
+  seconds_left = int(seconds_remaining - minutes_left * 60)
   hours_left = math.floor(minutes_left / 60)
   minutes_left = minutes_left - hours_left * 60
   print('hours remaining: ' + str(hours_left) + ':' + str(minutes_left) + ':' + str(seconds_left))
