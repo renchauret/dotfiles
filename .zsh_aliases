@@ -110,3 +110,7 @@ function git_undo_hard() {
 function awake() {
     python3 ~/documents/awake.py $1 $2
 }
+
+function aw() {
+    awake 8.5
+}
