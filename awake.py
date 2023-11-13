@@ -65,7 +65,14 @@ while seconds_remaining > 0:
   seconds_left = int(seconds_remaining - minutes_left * 60)
   hours_left = math.floor(minutes_left / 60)
   minutes_left = minutes_left - hours_left * 60
-  print('hours remaining: ' + str(hours_left) + ':' + str(minutes_left) + ':' + str(seconds_left))
+  hours_left_str = str(hours_left)
+  minutes_left_str = str(minutes_left)
+  if len(minutes_left_str) == 1:
+    minutes_left_str = "0" + minutes_left_str
+  seconds_left_str = str(seconds_left)
+  if len(seconds_left_str) == 1:
+    seconds_left_str = "0" + seconds_left_str
+  print('hours remaining: ' + hours_left_str + ':' + minutes_left_str + ':' + seconds_left_str)
 
   seconds_to_wait = SECONDS_BETWEEN_MOVES
   if seconds_remaining < SECONDS_BETWEEN_MOVES:
