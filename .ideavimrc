@@ -7,6 +7,7 @@ let mapleader=" "
 " show relative line numbers except on your current line show absolute line number
 set relativenumber
 set number
+set visualbell
 
 " when pasting, the text you are highlighting does not replace the text in your register
 " vnoremap p pgvy
