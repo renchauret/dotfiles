@@ -73,6 +73,7 @@ ZSH_THEME="ren"
 plugins=(git)
 
 source $ZSH/oh-my-zsh.sh
+source $HOME/.zsh_aliases
 
 unsetopt inc_append_history
 unsetopt share_history
