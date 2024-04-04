@@ -7,7 +7,6 @@ let mapleader=" "
 " show relative line numbers except on your current line show absolute line number
 set relativenumber
 set number
-set visualbell
 
 " when pasting, the text you are highlighting does not replace the text in your register
 " vnoremap p pgvy
@@ -72,14 +71,14 @@ nnoremap <leader>vr :source ~/.ideavimrc<CR>
 map <leader>R <Action>(Debug)
 map <leader>r <Action>(Run)
 
-"" Map <leader>b to toggle the breakpoint on the current line
-map gb <Action>(ToggleLineBreakpoint)
+map gb <Action>(ToggleBookmark)
+map gB <Action>(ToggleLineBreakpoint)
 
 nmap <leader>? :action GotoAction<CR>
 
 map gr :action ShowUsages<CR>
 map gi :action GotoImplementation<CR>
-map gs :action GotoSuperMethod<CR>
+map gI :action GotoSuperMethod<CR>
 map gf :action Find<CR>
 map gF :action FindInPath<CR>
 map gy :action Replace<CR>
