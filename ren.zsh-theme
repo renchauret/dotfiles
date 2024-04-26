@@ -37,7 +37,7 @@ directory() {
    ARROW_FG="016"
    ARROW_BG="183"
    NEXT_ARROW_BG=""
-   if [[ -n $(git_prompt_info) ]]
+   if [[ -n $(git_prompt_info_2) ]]
    then
       NEXT_ARROW_BG="139"
    fi
@@ -52,7 +52,11 @@ git_prompt() {
    ARROW_FG="016"
    ARROW_BG="139"
    NEXT_ARROW_BG=""
-   [[ -n $(git_prompt_info) ]] && echo "$(arrow_start) $(git_prompt_info) $(arrow_end)"
+   [[ -n $(git_prompt_info_2) ]] && echo "$(arrow_start) $(git_prompt_info_2) $(arrow_end)"
+}
+
+git_prompt_info_2() {
+   echo "$ZSH_THEME_GIT_PROMPT_PREFIX${$(command git symbolic-ref HEAD 2> /dev/null)#refs/heads/}$(parse_git_dirty)$ZSH_THEME_GIT_PROMPT_SUFFIX"
 }
 
 # set the git_prompt_info text
