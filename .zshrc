@@ -73,7 +73,6 @@ ZSH_THEME="ren"
 plugins=(git)
 
 source $ZSH/oh-my-zsh.sh
-source $HOME/.zsh_aliases
 
 unsetopt inc_append_history
 unsetopt share_history
@@ -114,3 +113,9 @@ if [ $ITERM_SESSION_ID ]; then
 fi
 
 eval $(/opt/homebrew/bin/brew shellenv)
+
+export LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
+
+export N_PREFIX=$HOME/.n
+export PATH=$N_PREFIX/bin:$PATH
