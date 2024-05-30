@@ -112,5 +112,5 @@ function awake() {
 }
 
 function aw() {
-    awake 8.5 $1
+    awake 8 $1
 }
