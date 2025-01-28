@@ -1,6 +1,6 @@
-alias vim="nvim"
-alias vi="nvim"
-alias oldvim="vim"
+# alias vim="nvim"
+# alias vi="nvim"
+# alias oldvim="vim"
 
 function tg() {
    cd ~/toast/git-repos
@@ -18,22 +18,22 @@ function toast_services() {
 
 function g2x() {
    toast_services
-   ./deploy_g2_service.sh prod $1 1 $2
+   ./deploy_g2_service.sh prod $1 1 $2 $3
 }
 
 function g2() {
    oktoast production
-   g2x $1 $2
+   g2x $1 $2 $3
 }
 
 function dg2x() {
    toast_services
-   ./destroy_g2_service.sh prod $1 1 $2
+   ./destroy_g2_service.sh prod $1 1 $2 $3
 }
 
 function dg2() {
    oktoast production
-   dg2x $1 $2
+   dg2x $1 $2 $3
 }
 
 function spax() {
@@ -68,7 +68,7 @@ function nv() {
    nvim .
 }
 
-function gpu() {
+function gl() {
    git pull
 }
 
@@ -93,6 +93,14 @@ function gpx() {
 function gacp() {
     gac $1
     gpx
+}
+
+function gml() {
+    gco -
+    gl
+    gco -
+    gl
+    git merge -
 }
 
 function clear_branches() {
