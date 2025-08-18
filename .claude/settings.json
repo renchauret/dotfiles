@@ -17,6 +17,15 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "input=$(cat); model=$(echo \"$input\" | jq -r '.model.display_name'); cwd=$(echo \"$input\" | jq -r '.workspace.current_dir'); project=$(echo \"$input\" | jq -r '.workspace.project_dir'); style=$(echo \"$input\" | jq -r '.output_style.name'); session=$(echo \"$input\" | jq -r '.session_id' | cut -c1-8); git_info=\"\"; if [ -d \"$cwd/.git\" ]; then git_branch=$(cd \"$cwd\" && git symbolic-ref --short HEAD 2>/dev/null || echo \"detached\"); git_status=$(cd \"$cwd\" && git status --porcelain 2>/dev/null | wc -l | tr -d ' '); git_info=\" • $(printf \"\\033[36m\")⎇ $git_branch$(printf \"\\033[0m\")$([ \"$git_status\" -gt 0 ] && printf \" $(printf \"\\033[33m\")[$git_status]$(printf \"\\033[0m\")\")\" || true; fi; project_name=$(basename \"$project\"); printf \"$(printf \"\\033[32m\")◉ $model$(printf \"\\033[0m\") $(printf \"\\033[90m\")[$session]$(printf \"\\033[0m\") • $(printf \"\\033[35m\")$project_name$(printf \"\\033[0m\")$git_info • $(printf \"\\033[34m\")$(basename \"$cwd\")$(printf \"\\033[0m\") • $(printf \"\\033[93m\")$style$(printf \"\\033[0m\") mode\""
+    "command": "input=$(cat); model=$(echo \"$input\" | jq -r '.model.display_name'); cwd=$(echo \"$input\" | jq -r '.workspace.current_dir'); session=$(echo \"$input\" | jq -r '.session_id' | cut -c1-8); transcript_path=$(echo \"$input\" | jq -r '.transcript_path'); context_size=\"N/A\"; if [ -f \"$transcript_path\" ] && [ -r \"$transcript_path\" ]; then context_size=$(wc -c < \"$transcript_path\" 2>/dev/null | awk '{if($1>=1048576) printf \"%.1fM\", $1/1048576; else if($1>=1024) printf \"%.1fK\", $1/1024; else printf \"%d\", $1}'); fi; git_info=\"\"; if [ -d \"$cwd/.git\" ]; then git_branch=$(cd \"$cwd\" && git symbolic-ref --short HEAD 2>/dev/null || echo \"detached\"); git_status=$(cd \"$cwd\" && git status --porcelain 2>/dev/null | wc -l | tr -d ' '); git_info=\" • $(printf \"\\033[36m\")⎇ $git_branch$(printf \"\\033[0m\")$([ \"$git_status\" -gt 0 ] && printf \" $(printf \"\\033[33m\")[$git_status]$(printf \"\\033[0m\")\")\" || true; fi; printf \"$(printf \"\\033[32m\")◉ $model$(printf \"\\033[0m\") $(printf \"\\033[90m\")[$session]$(printf \"\\033[0m\") $(printf \"\\033[35m\")⌘ $context_size$(printf \"\\033[0m\")$git_info • $(printf \"\\033[34m\")$(basename \"$cwd\")$(printf \"\\033[0m\")\""
+  },
+  "mcpServers": {
+    "mcp-atlassian": {
+      "command": "npx",
+      "args": [
+        "mcp-remote@latest",
+        "https://mcp.atlassian.com/v1/sse"
+      ]
+    }
   }
 }
