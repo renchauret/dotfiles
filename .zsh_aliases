@@ -18,22 +18,22 @@ function toast_services() {
 
 function g2x() {
    toast_services
-   ./deploy_g2_service.sh prod $1 1 $2 $3
+   ./deploy_g2_service.sh -e prod -s $1 -n $1 -r $2 -d 0 -l
 }
 
 function g2() {
    oktoast production
-   g2x $1 $2 $3
+   g2x $1 $2
 }
 
 function dg2x() {
    toast_services
-   ./destroy_g2_service.sh prod $1 1 $2 $3
+   ./destroy_g2_service.sh -e prod -s $1 -n $1 -r $2 -d 0 -l
 }
 
 function dg2() {
    oktoast production
-   dg2x $1 $2 $3
+   dg2x $1 $2
 }
 
 function spax() {
