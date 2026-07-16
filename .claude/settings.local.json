@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__plugin_slack_slack__slack_search_public_and_private",
+      "mcp__plugin_slack_slack__slack_read_channel",
+      "mcp__plugin_slack_slack__slack_search_channels",
+      "mcp__plugin_slack_slack__slack_read_thread",
+      "Bash(python3 ../create_archive.py)",
+      "Skill(toast-jira:read-issue)",
+      "Bash(bash \"/Users/renaud.chauret/.claude/plugins/marketplaces/toast-marketplace/plugins/toast-jira/skills/setup-jira/scripts/verify-acli-setup.sh\")",
+      "Bash(bash \"/Users/renaud.chauret/.claude/plugins/marketplaces/toast-marketplace/plugins/toast-jira/skills/read-issue/scripts/read-issue.sh\" DOCT-3954)",
+      "Skill(toast-developer:fetch-pr)",
+      "Skill(toast-developer:security-scan)",
+      "Skill(toast-developer:architecture-check)",
+      "Skill(toast-developer:quality-check)",
+      "Skill(toast-developer:adherence-check)",
+      "Bash(ls ~/.claude/plugins/cache/toast-marketplace/toast-developer/*/skills/)",
+      "Bash(ls -la ~/.claude/plugins/cache/toast-marketplace/toast-developer/*/skills/*.md)",
+      "Bash(head -10 ~/.claude/plugins/cache/claude-plugins-official/slack/1.0.0/skills/*/SKILL.md)",
+      "Bash(grep -A5 \"^---$\")",
+      "Bash(cat /Users/renaud.chauret/.claude/plugins/data/*.json)",
+      "Bash(find /Users/renaud.chauret/.claude/plugins/cache -name *.json -o -name *.yaml -o -name *.yml)",
+      "Bash(gh api:*)",
+      "Bash(GH_HOST=github.toasttab.com gh api repos/toasttab/toast-promotions/contents/catalog-info.yml -q .content)",
+      "Bash(gh search:*)",
+      "mcp__plugin_toast-cicd_developer-platform__get_dobby_deployments_tool",
+      "Skill(update-config)",
+      "Bash(ls ~/Downloads/FHSGUID* ~/Downloads/fhsguid*)",
+      "Bash(ls ~/Downloads/*.csv)",
+      "Bash(find ~/Downloads -name *FHSGUID* -o -name *fhsguid* -o -name *EXPORT*)",
+      "Bash(ls -t ~/Downloads/*.csv)",
+      "Bash(grep -E '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')",
+      "mcp__plugin_slack_slack__slack_schedule_message",
+      "Bash(pbcopy)"
+    ]
+  }
+}
