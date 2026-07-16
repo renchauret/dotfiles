@@ -107,32 +107,57 @@ Do all three before monitoring, so the tracked list is accurate for this pass.
 For each PR in the open set whose `url` has no yml entry, first check for an **opt-in or
 opt-out marker**; only PRs without one go to the batched ask.
 
-**Markers.** Fetch the PR's labels and body:
-`gh pr view <number> --repo <repo> --json labels,body`. A marker in **either** a label
-name **or** anywhere in the body means ren pre-decided monitoring — no need to ask:
+**Markers** let ren pre-decide monitoring in a label name **or** anywhere in the body, so
+no ask is needed:
 - `claude-no-monitor` → **do not monitor** (opt-out): record `monitor: false`, no mode.
 - `claude-monitor-unsafe` → monitor in **unsafe** mode.
 - `claude-monitor` → monitor in **safe** mode (the mode only matters for drafts).
 
-**Matching order matters.** Test `claude-no-monitor` FIRST, then `claude-monitor-unsafe`,
-then plain `claude-monitor`. `claude-monitor` is a substring of `claude-monitor-unsafe`,
-so testing the plain marker before the unsafe one would misread an unsafe request as
-safe. (`claude-no-monitor` shares no substring with the others, but check it up front so
-an opt-out is never mistaken for an opt-in.) When a marker is found:
-1. Write the yml entry (just `url`, `monitor`, `mode`, `exceptions`):
-   - `claude-no-monitor` → `monitor: false` (omit/ignore `mode`).
-   - `claude-monitor-unsafe` → `monitor: true`, `mode: unsafe`.
-   - `claude-monitor` → `monitor: true`, `mode: safe`.
-2. **Remove the marker(s) so it isn't reprocessed:** drop the label
-   (`gh pr edit <number> --repo <repo> --remove-label <marker>`) and/or
-   strip the token from the body and update it (`gh pr edit <number> --repo <repo>
-   --body "<cleaned body>"`). Remove whichever markers were present (a PR could carry
-   both a label and a body token). Do this once, at record time.
+**Fetching, interpreting, and removing markers is delegated to
+[`pr-markers.sh`](#the-marker-script).** Run it once per new PR (by URL). It fetches the
+labels and body, applies the priority rules (no-monitor > unsafe > safe, handling the
+`claude-monitor` / `claude-monitor-unsafe` substring overlap), strips every marker present
+so the PR isn't reprocessed, and prints a JSON decision. Do **not** re-implement the
+matching or `gh pr edit` removal by hand.
+
+Read the JSON `decision` field and write the yml entry (`url`, `monitor`, `mode`,
+`exceptions`) accordingly:
+- `"no-monitor"` → `monitor: false` (omit/ignore `mode`).
+- `"unsafe"` → `monitor: true`, `mode: unsafe`.
+- `"safe"` → `monitor: true`, `mode: safe`.
+- `"none"` (no marker) → fall through to the batched ask below.
+
+The script already removed the marker(s) as part of its run (unless you passed
+`--dry-run`); `removed_labels` / `body_updated` in its output tell you what it stripped.
 
 A `claude-no-monitor`–recorded entry behaves exactly like a declined one: `monitor:
 false` means it's **never re-asked** and skipped every pass while it stays in the open
-set. If a PR somehow carries both an opt-out and an opt-in marker, the **opt-out wins** —
-record `monitor: false` and strip all markers.
+set. If a PR carries both an opt-out and an opt-in marker, the script's **opt-out wins**
+(and it strips all markers), so you'll see `decision: "no-monitor"`.
+
+### The marker script
+
+`skills/monitor-all-prs/pr-markers.sh <pr-url>` — the one place that fetches, interprets,
+and removes a PR's monitor markers. Usage:
+
+```
+pr-markers.sh <pr-url>              # fetch, decide, and strip markers; print JSON
+pr-markers.sh --dry-run <pr-url>    # fetch and decide only; remove nothing
+```
+
+`<pr-url>` is the entry's canonical `url`; the script parses owner/repo, number, and the
+`gh` host from it (no need to set `GH_HOST` yourself). It prints one JSON object to stdout
+(diagnostics go to stderr):
+
+```json
+{"url":"…","marker_found":true,"decision":"unsafe","monitor":true,"mode":"unsafe",
+ "removed_labels":["claude-monitor"],"body_updated":true,"dry_run":false}
+```
+
+`decision` is `no-monitor | unsafe | safe | none`. A non-zero exit means the fetch or a
+`gh` call failed — treat it like any transient per-PR error (note it, skip this PR this
+pass, retry next). It's idempotent: a re-run on an already-cleaned PR returns
+`decision: "none"` and changes nothing.
 
 **PRs with no marker → batched ask.** Ask ren whether to monitor each — and for **draft**
 PRs, safe or unsafe. **Batch the ask**: one `AskUserQuestion` (or, in away mode, one Slack
@@ -151,8 +176,7 @@ regardless of reachability.)
 
 Also **derive the `ticket`** for each new entry (see [Deriving the ticket](#deriving-the-ticket));
 omit the field if none can be derived. On later passes, if a tracked entry has no `ticket`,
-retry the derivation and fill it in if a key now appears
-(a ticket may have been linked in the body since it was recorded).
+retry the derivation and fill it in if a key now appears (a ticket may have been linked in the body since it was recorded).
 
 ### Departed PRs (in yml, not in open set)
 
@@ -298,12 +322,10 @@ surface in the terminal. Notify, don't block the loop.
 |------|---------|
 | All open authored PRs | `GH_HOST=github.toasttab.com gh search prs --author "@me" --state open --limit 100 --json number,title,url,isDraft,repository` |
 | Confirm a departed PR's fate | `gh pr view <number> --repo <owner/repo> --json state,mergedAt` |
-| Read a PR's opt-in/opt-out markers | `gh pr view <number> --repo <owner/repo> --json labels,body` |
+| Fetch/interpret/remove a PR's markers | `skills/monitor-all-prs/pr-markers.sh <pr-url>` (`--dry-run` to decide without removing) → JSON `{decision, monitor, mode, …}` |
 | Derive a PR's ticket | `gh pr view <number> --repo <owner/repo> --json headRefName,body` → key from `headRefName` (`^[A-Z0-9]+-\d+`) or a `browse/<KEY>` link in the body |
 | List a ticket's transitions | `acli jira workitem transition --key <KEY> --status "<name>" --yes` (or `getTransitionsForJiraIssue` to check names first) |
 | Set fix version to n/a (before Close) | Atlassian MCP `editJiraIssue` with `fixVersions: [{name: "n/a"}]` (acli edit has no fix-version flag) |
-| Clear a marker label | `gh pr edit <number> --repo <owner/repo> --remove-label claude-monitor` (or `claude-monitor-unsafe`, or `claude-no-monitor`) |
-| Clear a marker in body | `gh pr edit <number> --repo <owner/repo> --body "<body with token stripped>"` |
 | Tracking file | `~/Documents/monitored-prs.yml` (maintain with Read/Write/Edit — no yq/yaml CLI; entries keyed by `url`) |
 | Repo checkouts | `~/toast/git-repos/<repo>` (shared — never change directly) |
 | Make a change worktree (detached) | `git -C ~/toast/git-repos/<repo> worktree add --detach ~/toast/git-worktrees/<repo>-<branch> origin/<branch>` |
@@ -314,14 +336,14 @@ surface in the terminal. Notify, don't block the loop.
 
 - **Re-asking about declined PRs.** `monitor: false` means never ask again while it's open
   — whether ren declined it or it carried a `claude-no-monitor` marker.
-- **Misreading `claude-monitor-unsafe` as safe.** It contains `claude-monitor` — always
-  test the unsafe marker before the plain one.
-- **Treating `claude-no-monitor` as an opt-in.** It's an opt-out — record `monitor: false`,
-  no mode. Test it first so an opt-out is never read as monitor. If both an opt-out and an
-  opt-in marker are present, opt-out wins.
+- **Hand-rolling marker matching or removal.** Fetching, interpreting, and stripping
+  markers is `pr-markers.sh`'s job — run it and read its `decision`. Don't reimplement the
+  priority rules (no-monitor > unsafe > safe), the `claude-monitor` / `claude-monitor-unsafe`
+  substring handling, or the `gh pr edit` removal inline.
 - **Asking about a marked PR, or leaving the marker on.** A `claude-monitor[-unsafe]` or
-  `claude-no-monitor` label/body token means ren pre-decided — record it without asking,
-  then strip the marker so it's not reprocessed.
+  `claude-no-monitor` label/body token means ren pre-decided — run `pr-markers.sh` (which
+  records the decision and strips the marker) instead of asking. Only PRs whose decision is
+  `none` go to the batched ask.
 - **A question per PR on first run.** Batch new-PR asks into one prompt/message.
 - **Monitoring a PR ren didn't opt into.** New PRs need his yes before `monitor: true`.
 - **Leaving merged/closed PRs in the yml.** Drop any entry that's left the open set
