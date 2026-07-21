@@ -8,17 +8,20 @@ description: |
   Wraps the analyze-pr skill (the same per-PR engine monitor-pr wraps).
 user-invocable: true
 disable-model-invocation: false
-allowed-tools: Bash, Read, Edit, Write, Grep, Glob, AskUserQuestion, mcp__plugin_slack_slack__slack_send_message, mcp__plugin_slack_slack__slack_search_channels, mcp__atlassian__editJiraIssue, mcp__atlassian__transitionJiraIssue, mcp__atlassian__getTransitionsForJiraIssue
+allowed-tools: Task, Bash, Read, Edit, Write, Grep, Glob, AskUserQuestion, mcp__plugin_slack_slack__slack_send_message, mcp__plugin_slack_slack__slack_search_channels, mcp__atlassian__editJiraIssue, mcp__atlassian__transitionJiraIssue, mcp__atlassian__getTransitionsForJiraIssue
 ---
 
 # Monitor All PRs
 
-Run **one** agent that watches every open PR ren authored. Every 10 minutes it discovers his unmerged authored PRs,
-reconciles them against a tracking file, and runs the full **`analyze-pr`** logic on each PR it's told to monitor.
+Watch every open PR ren authored. Every 10 minutes this skill discovers his unmerged authored PRs, reconciles them
+against a tracking file, and **dispatches one subagent per monitored PR** — each running the full **`analyze-pr`** logic
+on its one PR, in parallel.
 
 This skill is the fleet manager; **`analyze-pr` is the per-PR engine.** For what to do to any single PR — base-branch
 merges, pipeline failures, review comments, draft/merge decisions — **follow the `analyze-pr` skill** (the same engine
-`monitor-pr` wraps). This skill only adds discovery, the tracking file, and the per-PR loop around it.
+`monitor-pr` wraps). This skill only adds discovery, the tracking file, the per-PR fan-out, and the cross-PR ticket
+transitions around it. Per-PR subagents keep each pass focused: a fresh context holding one PR's state can't skip a
+check by fixating on another PR's approval.
 
 ## The tracking file
 
@@ -88,8 +91,8 @@ Keep looping until ren stops it.
 
 2. **Reconcile the tracking file against the open set** (see [Reconciliation](#reconciliation)).
 
-3. **Run an `analyze-pr` pass** on every tracked entry with `monitor: true` (see
-   [Per-PR monitoring](#per-pr-monitoring)).
+3. **Dispatch one subagent per tracked entry** with `monitor: true`, each running an
+   `analyze-pr` pass, in parallel (see [Per-PR monitoring](#per-pr-monitoring)).
 
 ## Reconciliation
 
@@ -197,27 +200,41 @@ wait for the next reconciliation).
 
 ## Per-PR monitoring
 
-For each tracked entry with `monitor: true`, run **one `analyze-pr` pass** on that PR, following the `analyze-pr`skill's
-steps in order. Feed it these inputs from the entry:
+**Dispatch one subagent per tracked PR** (`monitor: true`), and run them in parallel — one
+`Task` call each, all in a single message. A fresh subagent context holding only one PR's
+state is what keeps the agent from laser-focusing on one signal (a new approval) and
+skipping the other checks — the whole reason the per-PR logic lives in `analyze-pr`.
+
+Each subagent's task: **run one `analyze-pr` pass** on its PR, following the `analyze-pr`
+skill's steps 1→6 in order, and return `analyze-pr`'s full report (per-step status block +
+outcome labels). Give each subagent these inputs from the entry:
 
 - **PR** — parse `<owner/repo>` and `<number>` from the entry's `url`
   (`.../<owner>/<repo>/pull/<number>`); pass the `url` itself as the PR reference.
 - **mode** — the entry's `mode` (drives the draft decision).
-- **session-archives** — whether they exist for this PR.
-- **change context** — a **throwaway worktree** (the shared checkout may be in use by another agent).
-  See [Isolate changes in a throwaway worktree](#isolate-changes-in-a-throwaway-worktree).
-- **exceptions** — the entry's `exceptions` field. `analyze-pr` reads this first and lets a documented deviation
-  override any step it conflicts with. Do not re-derive or diverge from `analyze-pr`'s logic here; this skill delegates
-  that behavior wholesale.
+- **exceptions** — the entry's `exceptions` field. `analyze-pr` reads this first and lets a
+  documented deviation override any step it conflicts with. Do not re-derive or diverge from
+  `analyze-pr`'s logic here; this skill delegates that behavior wholesale.
 
-Then use the pass's reported outcome (`readied`, `merged`, etc.) to drive
-[Ticket transitions](#ticket-transitions) and [Self-merged PRs](#self-merged-prs).
+`analyze-pr` handles its own change isolation (it makes every repo change in a throwaway
+worktree) — the parent doesn't manage worktrees.
 
-If, while working a PR, ren gives you a new standing exception for it, **record it in that entry's `exceptions` field**
-so it persists for future passes and agents.
+**Subagents can't block on an interactive ask.** Tell each: notify ren via Slack
+fire-and-forget where `analyze-pr` says to notify, and if a merge needs ren's explicit
+approval (auto-mode classifier denied it), return the `needs-ren-approval` outcome rather
+than asking. **You (the parent) do the interactive asking** for any PR that comes back
+`needs-ren-approval`.
 
-Process PRs one at a time within a pass. If one PR errors, note it and continue to the next — one bad PR must not stall
-the whole fleet.
+When all subagents return, **check each report's per-step status block** — six lines, one
+per step. A missing or skipped step means the subagent didn't follow the logic: **re-dispatch
+that PR** (don't accept a partial pass). Then use each PR's outcome labels (`readied`,
+`merged`, etc.) to drive [Ticket transitions](#ticket-transitions) and
+[Self-merged PRs](#self-merged-prs) — these stay in the parent because they need cross-PR
+sibling awareness a single-PR subagent doesn't have.
+
+If a subagent errors (or ren gives you a new standing exception for a PR mid-pass), note it
+and carry on with the others — one bad PR must not stall the whole fleet. Record any new
+exception in that entry's `exceptions` field so it persists for future passes.
 
 ### Ticket transitions
 
@@ -258,17 +275,6 @@ Both transitions are idempotent-ish in effect but not in action: only fire each 
 action happens. Don't re-transition a ticket already in the target status. If the transition call fails, note it and
 keep going — a failed JIRA move must not stall the PR loop (same isolation rule as a per-PR error).
 
-### Isolate changes in a throwaway worktree
-
-Other agents may be actively working in `~/toast/git-repos/<repo>`, so **never make changes directly in the main
-checkout.** Whenever a pass needs to modify a repo — a base-branch merge, a fix/commit, a no-op-commit pipeline
-retrigger — **follow the
-`throwaway-git-worktree` skill**: create a detached worktree at the PR head, do all analyze-pr change work there, push
-back with an explicit refspec, and delete the worktree when done with that PR (success or failure). Read-only steps
-(fetching PR state, checking CI, reading review threads, `gh pr ready`, `gh pr merge`) do **not** need a worktree.
-
-Do this per PR that needs changes, then move to the next PR.
-
 ## Notifying ren
 
 Same as `analyze-pr`: in away mode relay to **#ren-claude** via `slack_send_message`; else surface in the terminal.
@@ -285,16 +291,13 @@ Notify, don't block the loop.
 | List a ticket's transitions           | `acli jira workitem transition --key <KEY> --status "<name>" --yes` (or `getTransitionsForJiraIssue` to check names first)                         |
 | Set fix version to n/a (before Close) | Atlassian MCP `editJiraIssue` with `fixVersions: [{name: "n/a"}]` (acli edit has no fix-version flag)                                              |
 | Tracking file                         | `~/Documents/monitored-prs.yml` (maintain with Read/Write/Edit — no yq/yaml CLI; entries keyed by `url`)                                           |
-| Repo checkouts                        | `~/toast/git-repos/<repo>` (shared — never change directly)                                                                                        |
-| Make a change in a repo               | Follow the `throwaway-git-worktree` skill (detached worktree → push refspec → remove)                                                              |
 
 ## Common mistakes
 
 - **Closing without the n/a fix version.** Many projects block a close without a fix version — set `n/a` (via
   `editJiraIssue`) *before* the Closed transition, not after.
 - **Shelling out to a YAML tool.** None is installed; edit the yml with your file tools.
-- **Changing the shared checkout directly.** Another agent may be in `~/toast/git-repos/
-  <repo>` — always make changes via the `throwaway-git-worktree` skill and delete the worktree when done.
-- **Not checking review comments every pass.** Always check if there are new review comments to address.
-- **Not checking base branch every pass.** Always check if the feature branch has fallen behind the base branch.
-- **Not resolving comments after making changes.** Always resolve a review comment you made a change for.
+- **Accepting a partial subagent pass.** If a report is missing a step's status line,
+  re-dispatch that PR — don't let a skipped check slide.
+- **Doing ticket transitions inside a subagent.** They need cross-PR sibling awareness; the
+  parent owns them.

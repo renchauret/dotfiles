@@ -31,13 +31,19 @@ one signal (a new approval) and silently skipping the others.
 
 - **PR** — repo + number, or URL.
 - **mode** — `safe` (default) or `unsafe`; matters only for draft PRs (step 5).
-- **session-archives** — whether they exist for this PR (several steps update them "if they exist").
-- **change context** — where you make changes. `monitor-pr` works in the PR's checkout
-  directly; `monitor-all-prs` requires a throwaway worktree — **follow the
-  `throwaway-git-worktree` skill** there. Every "push" below happens in that context.
 - **exceptions** — optional PR-specific overrides your wrapper tracks. If present, read
   them first; a documented exception **overrides any step below where it conflicts** (e.g.
   skip the base merge, ignore a named failing check, don't auto-merge).
+
+## Making changes: always use a throwaway worktree
+
+Whenever a step below modifies the repo — a base merge, a fix/commit, a no-op-commit
+pipeline retrigger — **do it in a throwaway git worktree, following the
+`throwaway-git-worktree` skill**, then delete the worktree. The shared checkout may be in
+use by another agent (and wrappers may run several analyze-pr passes concurrently), so
+never touch it directly. Read-only steps (fetching PR state, checking CI, reading review
+threads, `gh pr ready`, `gh pr merge`) need no worktree. Every "push" below happens from
+that worktree.
 
 ## The steps
 
@@ -83,7 +89,7 @@ Check the most recent CI run: `gh pr checks <pr>` (for Toast build detail/logs u
   - Can't rerun directly? → merge base into feature (step 2) to trigger a fresh run.
   - No base changes to merge? → push a **no-op commit followed by an undo commit** to force
     a new run (empty `git commit --allow-empty`, or add-then-remove a throwaway line).
-- **Real failure** → fix the issue and push. Update session-archives if they exist.
+- **Real failure** → fix the issue and push.
 
 ### 4. Review-comment check
 
@@ -112,7 +118,6 @@ approval / changes-requested state).
 2. **Resolve each thread you made a change for** (`gh api graphql` resolveReviewThread).
 3. Do **not** resolve threads you didn't change.
 4. Do **not** respond to any comment.
-5. Update session-archives if they exist.
 
 ### 5. Draft decision (draft PRs only)
 
@@ -140,13 +145,30 @@ Squash-merge (`gh pr merge <pr> --squash`) only if **ALL** hold:
 
 - If all conditions hold but GitHub blocks the squash-merge (branch protection, required
   checks, etc.) → **notify ren**; don't force it.
-- If all conditions hold but the auto-mode classifier denies the merge → **ask ren** for
-  explicit approval; don't give up and tell him to merge it himself.
+- If all conditions hold but the auto-mode classifier denies the merge → you need ren's
+  explicit approval. If you can ask interactively, **ask ren**; don't give up and tell him
+  to merge it himself. If you're running as a subagent (can't block on an interactive
+  ask), report the `needs-ren-approval` outcome and let the parent ask.
 
 ## Report the pass outcome
 
-End the pass by stating what happened this pass, so a wrapper can act on it (e.g.
-`monitor-all-prs` drives JIRA ticket transitions off `readied` and `merged`):
+End the pass with a report that proves you ran every step, so a wrapper can act on it (e.g.
+`monitor-all-prs` drives JIRA ticket transitions off `readied` and `merged`, and re-runs
+you if a step is missing).
+
+**Per-step status — one line per step, always all six.** This is the audit trail; a missing
+line means the step was skipped. State what you found and did:
+
+```
+1 state:    draft=false base=main head=DOCT-1/x mergeable=MERGEABLE reviewDecision=APPROVED
+2 base:     current (nothing to merge)
+3 pipeline: passed
+4 comments: 1 actionable from bob → skipped (ren engaged elsewhere in review)
+5 draft:    n/a (not a draft)
+6 merge:    merged — all 4 conditions held
+```
+
+**Outcome labels** — list every one that applies (more than one can):
 
 - `base-merged` — merged base into feature and pushed.
 - `pipeline-rerun` — retriggered CI (transient failure).
@@ -154,9 +176,12 @@ End the pass by stating what happened this pass, so a wrapper can act on it (e.g
 - `readied` — moved the PR out of draft (`gh pr ready`).
 - `merged` — squash-merged the PR.
 - `notified` — notified ren (and why).
+- `needs-ren-approval` — merge conditions held but the auto-mode classifier denied it and
+  you couldn't ask interactively; the parent must ask ren.
+- `error` — a step failed; name which and why.
 - `no-op` — nothing needed this pass.
 
-More than one can apply. Be explicit; a wrapper must not have to infer what you did.
+Be explicit; a wrapper must not have to infer what you did.
 
 ## Notifying ren
 
@@ -185,8 +210,7 @@ Notify, then continue — don't block waiting on a reply.
 
 - **Skipping a step because another looks more urgent.** Run steps 1→6 every pass; a new
   approval does not excuse skipping the pipeline or review-comment checks.
-- **Relying on a stale read.** Re-fetch state (step 1) at the start of every pass;
-  approvals and checks can land mid-pass.
+- **Relying on a stale read.** Re-fetch state (step 1) at the start of every pass.
 - **Rebasing the base branch.** ren merges base into feature — never rebase.
 - **Dropping a side in a conflict.** Keep both sets of changes.
 - **Merging `development` every pass on toastweb/toastmobile.** Merge only to resolve
@@ -194,3 +218,4 @@ Notify, then continue — don't block waiting on a reply.
 - **Responding to comments.** Never reply; only make changes and resolve.
 - **Resolving threads you didn't change.** Only resolve what you fixed.
 - **Defaulting to unsafe mode.** Safe is the default; unsafe requires ren's word.
+- **Not checking comment reactions on review comments** ren can approve a suggestion by reacting 👍

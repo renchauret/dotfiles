@@ -29,18 +29,15 @@ You drive `gh` (GitHub) and `idp` (Toast CI builds) via `Bash`.
    `gh pr view <pr> --json number,isDraft,baseRefName,headRefName,url,mergeable,reviewDecision`.
 2. **Determine mode** (draft PRs only): **safe** (default) or **unsafe**. Use unsafe ONLY
    if ren explicitly said so — never default to it.
-3. **Check for session-archives** for this PR (see ren's session-archives convention).
-   Remember whether they exist — `analyze-pr` updates them "if they exist".
-4. Confirm to ren: which PR, which mode, 10-minute interval.
+3. Confirm to ren: which PR, which mode, 10-minute interval.
 
 ## The loop
 
 Every **10 minutes**, run one full pass, then park cheaply until the next:
 
-- **Run one `analyze-pr` pass** on this PR, passing its `mode` and whether session-archives
-  exist. `analyze-pr` does the fresh state fetch, base-branch check, pipeline check,
-  review-comment check, and the draft/merge decision — in that fixed order. Make changes
-  directly in the PR's checkout (no worktree needed; this skill watches a single PR).
+- **Run one `analyze-pr` pass** on this PR, passing its `mode`. `analyze-pr` does the fresh
+  state fetch, base-branch check, pipeline check, review-comment check, and the draft/merge
+  decision — in that fixed order, and handles its own change isolation (throwaway worktree).
 - **Park** with a `Bash` `sleep 600` and an explicit `timeout: 610000` on the call (Bash
   defaults to a 120s timeout and would kill a bare `sleep 600` at exit 143).
 
