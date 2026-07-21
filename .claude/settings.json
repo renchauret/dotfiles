@@ -1,23 +1,125 @@
 {
+  "apiKeyHelper": "/opt/homebrew/bin/toastApiKeyHelper",
+  "env": {
+    "CLAUDE_CODE_USE_BEDROCK": "1",
+    "CLAUDE_CODE_SKIP_BEDROCK_AUTH": "1",
+    "ANTHROPIC_BEDROCK_BASE_URL": "https://llm-proxy.build.eng.toasttab.com/bedrock",
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
+    "OTEL_METRICS_EXPORTER": "otlp",
+    "OTEL_LOGS_EXPORTER": "otlp",
+    "OTEL_EXPORTER_OTLP_PROTOCOL": "http/protobuf",
+    "OTEL_EXPORTER_OTLP_ENDPOINT": "https://bedrock-otel-collector.build.eng.toasttab.com",
+    "DISABLE_AUTOUPDATER": "1",
+    "OTEL_LOG_TOOL_DETAILS": "1",
+    "OTEL_METRICS_INCLUDE_SESSION_ID": "true",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "global.anthropic.claude-opus-4-8[1m]",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "global.anthropic.claude-sonnet-5",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "global.anthropic.claude-sonnet-5[1m]",
+    "CLAUDE_CODE_ENABLE_AUTO_MODE": "1",
+    "ANTHROPIC_DEFAULT_FABLE_MODEL": "global.anthropic.claude-fable-5",
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "attribution": {
+    "commit": "Generated with Claude Code"
+  },
+  "permissions": {
+    "defaultMode": "auto"
+  },
+  "model": "opus",
   "hooks": {
-    "Stop": [{
-      "matcher": "",
-      "hooks": [{
-        "type": "command",
-        "command": "afplay /System/Library/Sounds/Funk.aiff"
-      }]
-    }],
-    "Notification": [{
-      "matcher": "",
-      "hooks": [{
-        "type": "command",
-        "command": "afplay /System/Library/Sounds/Funk.aiff"
-      }]
-    }]
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/renaud.chauret/.claude/hooks/session-archive.sh",
+            "timeout": 120,
+            "statusMessage": "Archiving session summary..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Funk.aiff"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Funk.aiff"
+          }
+        ]
+      }
+    ]
   },
   "statusLine": {
     "type": "command",
-    "command": "input=$(cat); model=$(echo \"$input\" | jq -r '.model.display_name'); cwd=$(echo \"$input\" | jq -r '.workspace.current_dir'); session=$(echo \"$input\" | jq -r '.session_id' | cut -c1-8); transcript_path=$(echo \"$input\" | jq -r '.transcript_path'); context_size=\"N/A\"; if [ -f \"$transcript_path\" ] && [ -r \"$transcript_path\" ]; then context_size=$(wc -c < \"$transcript_path\" 2>/dev/null | awk '{if($1>=1048576) printf \"%.1fM\", $1/1048576; else if($1>=1024) printf \"%.1fK\", $1/1024; else printf \"%d\", $1}'); fi; git_info=\"\"; if [ -d \"$cwd/.git\" ]; then git_branch=$(cd \"$cwd\" && git symbolic-ref --short HEAD 2>/dev/null || echo \"detached\"); git_status=$(cd \"$cwd\" && git status --porcelain 2>/dev/null | wc -l | tr -d ' '); git_info=\" • $(printf \"\\033[36m\")⎇ $git_branch$(printf \"\\033[0m\")$([ \"$git_status\" -gt 0 ] && printf \" $(printf \"\\033[33m\")[$git_status]$(printf \"\\033[0m\")\")\" || true; fi; printf \"$(printf \"\\033[32m\")◉ $model$(printf \"\\033[0m\") $(printf \"\\033[90m\")[$session]$(printf \"\\033[0m\") $(printf \"\\033[35m\")⌘ $context_size$(printf \"\\033[0m\")$git_info • $(printf \"\\033[34m\")$(basename \"$cwd\")$(printf \"\\033[0m\")\""
+    "command": "/Users/renaud.chauret/.claude/statusline-command.sh",
+    "refreshInterval": 10
+  },
+  "enabledPlugins": {
+    "slack@claude-plugins-official": true,
+    "toast-jira@toast-marketplace": true,
+    "superpowers@claude-plugins-official": true,
+    "toast-developer@toast-marketplace": false,
+    "toast-ai-enablement@toast-marketplace": false,
+    "toast-auto-update@toast-marketplace": true,
+    "toast-slack@toast-marketplace": false,
+    "toast-google-workspace@toast-marketplace": true,
+    "toast-confluence@toast-marketplace": true,
+    "toast-datadog@toast-marketplace": true,
+    "toast-snowflake@toast-marketplace": true,
+    "toast-sourcegraph@toast-marketplace": true,
+    "general-utils@funds-pricing-marketplace": true,
+    "figma@claude-plugins-official": true,
+    "dev-utils@consumer-pay-marketplace": true,
+    "manage-toast-cash@consumer-pay-marketplace": true,
+    "playwright@claude-plugins-official": true,
+    "buffet@toast-marketplace": true,
+    "toast-web-development@toast-marketplace": true,
+    "toast-backend-development@toast-marketplace": false
+  },
+  "extraKnownMarketplaces": {
+    "toast-marketplace": {
+      "source": {
+        "source": "git",
+        "url": "git@github.toasttab.com:toasttab/claude-marketplace.git"
+      }
+    },
+    "funds-pricing-marketplace": {
+      "source": {
+        "source": "git",
+        "url": "git@github.toasttab.com:toasttab/funds-pricing-marketplace"
+      }
+    }
+  },
+  "otelHeadersHelper": "/opt/homebrew/bin/otelHeadersHelper",
+  "companyAnnouncements": [
+    "Need help? Join #rd-claude-code-internal on Slack\nhttps://toast.enterprise.slack.com/archives/C09GW0ZLD27",
+    "To upgrade Claude Code and Toast tooling, run:\ncurl -fsSL https://ai-setup.eng.toasttab.com/install.sh | bash"
+  ],
+  "teammateMode": "iterm2",
+  "skipAutoPermissionPrompt": true,
+  "autoMode": {
+    "environment": [
+      "$defaults",
+      "Organization: Toast. Primary use: software development on the Toast platform and products.",
+      "Source control: github.toasttab.com (GitHub Enterprise) under the toasttab org",
+      "Trusted internal domains: *.toasttab.com, *.eng.toasttab.com, *.build.eng.toasttab.com"
+    ]
   },
   "mcpServers": {
     "mcp-atlassian": {

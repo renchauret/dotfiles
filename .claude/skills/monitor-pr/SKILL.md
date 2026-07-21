@@ -38,12 +38,12 @@ the next pass:
 
 - Park with a `Bash` `sleep 600` and an explicit `timeout: 610000` on the call
   (Bash defaults to a 120s timeout and would kill a bare `sleep 600` at exit 143).
-- On each wake, re-fetch PR state and run the [General](#general-draft-and-non-draft)
+- On each wake, re-fetch PR state and run the [All PRs](#all-prs)
   logic first, then the draft- or non-draft-specific logic.
 
 Stop the loop when the PR merges, or when ren tells you to stop.
 
-## General (draft AND non-draft)
+## All PRs
 
 Run all three of these every pass, in order.
 
@@ -197,6 +197,8 @@ Notify, then keep looping — don't block the loop waiting on a reply.
 
 - **Rebasing the base branch.** ren merges base into feature — never rebase.
 - **Dropping a side in a conflict.** Keep both sets of changes.
+- **Not checking review comments every pass.** Always check if there are new review comments to address.
+- **Not checking base branch every pass.** Always check if the feature branch has fallen behind the base branch.
 - **Merging `development` every pass on toastweb/toastmobile.** Those repos churn too
   fast — merge only to resolve conflicts, else the loop never sees CI finish.
 - **Responding to comments.** Never reply; only make changes and resolve.

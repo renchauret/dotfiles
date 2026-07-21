@@ -335,7 +335,6 @@ surface in the terminal. Notify, don't block the loop.
 ## Common mistakes
 
 - **Re-asking about declined PRs.** `monitor: false` means never ask again while it's open
-  — whether ren declined it or it carried a `claude-no-monitor` marker.
 - **Hand-rolling marker matching or removal.** Fetching, interpreting, and stripping
   markers is `pr-markers.sh`'s job — run it and read its `decision`. Don't reimplement the
   priority rules (no-monitor > unsafe > safe), the `claude-monitor` / `claude-monitor-unsafe`
@@ -368,3 +367,6 @@ surface in the terminal. Notify, don't block the loop.
 - **Changing the shared checkout directly.** Another agent may be in `~/toast/git-repos/
   <repo>` — always make changes in a throwaway worktree and delete it when done.
 - **Leaking worktrees.** Remove the worktree even on failure/bail; never let them pile up.
+- **Not checking review comments every pass.** Always check if there are new review comments to address.
+- **Not checking base branch every pass.** Always check if the feature branch has fallen behind the base branch.
+- **Not resolving comments after making changes.** Always resolve a review comment you made a change for.
