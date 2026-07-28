@@ -211,11 +211,8 @@ Notify, then continue — don't block waiting on a reply.
 - **Skipping a step because another looks more urgent.** Run steps 1→6 every pass; a new
   approval does not excuse skipping the pipeline or review-comment checks.
 - **Relying on a stale read.** Re-fetch state (step 1) at the start of every pass.
-- **Rebasing the base branch.** ren merges base into feature — never rebase.
-- **Dropping a side in a conflict.** Keep both sets of changes.
 - **Merging `development` every pass on toastweb/toastmobile.** Merge only to resolve
   conflicts, else the loop never sees CI finish.
 - **Responding to comments.** Never reply; only make changes and resolve.
-- **Resolving threads you didn't change.** Only resolve what you fixed.
 - **Defaulting to unsafe mode.** Safe is the default; unsafe requires ren's word.
 - **Not checking comment reactions on review comments** ren can approve a suggestion by reacting 👍

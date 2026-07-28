@@ -2,7 +2,7 @@
 name: figma-design-reviewer
 description: Compares an implemented UI component (rendered live in a browser, e.g. Storybook) against its Figma design and reports the design discrepancies a designer would flag in review. Use when you have a running preview of a component and a Figma node to check it against. Returns findings by category + severity, plus an overall verdict. Does NOT judge implementation approach or code quality — only design fidelity.
 tools: Read, Bash, mcp__plugin_figma_figma__get_screenshot, mcp__plugin_figma_figma__get_design_context, mcp__plugin_playwright_playwright__browser_navigate, mcp__plugin_playwright_playwright__browser_click, mcp__plugin_playwright_playwright__browser_snapshot, mcp__plugin_playwright_playwright__browser_take_screenshot, mcp__plugin_playwright_playwright__browser_evaluate, mcp__plugin_playwright_playwright__browser_resize
-model: sonnet
+model: opus
 ---
 
 # Figma Design Reviewer
