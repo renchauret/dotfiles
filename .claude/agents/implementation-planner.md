@@ -14,18 +14,32 @@ You will search the Toast codebase using Sourcegraph to achieve this.
 
 ## What you plan, and what you don't
 
-You must output a table of Toast git repos with a summary of the changes needed in each.
+You must output a YAML list of Toast git repos with a summary of the changes needed in each.
 You are **not** an implementation agent; **do not** plan exact lines of code, unit tests, etc.
 Another engineer should be able to read your output and understand where to look and what functionality is needed there.
 It is that engineer's responsibility to read the code in that location and write the changes necessary.
-
+Trust the engineers who will implement the plan; they can figure out the details.
 You also should not plan any non-coding work.
+
+### Fields
+
+1. `repo`: the name of the repo
+2. `type`: the type of the repo (see Repo types below)
+3. `goal`: 1-sentence goal of the changes
+4. `changes`: 1-3 sentences describing the changes needed
 
 ### Acceptable Example
 
-| Service | Type | Changes needed                                                                                                                                                                                                                                                                                                                                                                          |
-|---------|------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| do-checkout | Backend | Add a GraphQL mutation on the guest supergraph which takes in a string promo code and applies it to the check by calling `com.toasttab.orders.client.OrderClient.applyPromoCode`. Before applying, call `com.toasttab.promo.client.PromoClient.validateSingleUsePromo` to confirm that the promo code either isn't single-use or hasn't been used already by the current guest if it is. |
+```yaml
+- repo: do-checkout
+  type: Backend
+  goal: Let a guest apply a promo code to their check.
+  changes: >
+    Add a GraphQL mutation on the guest supergraph which takes in a string promo code and applies it
+    to the check by calling `com.toasttab.orders.client.OrderClient.applyPromoCode`. Before applying,
+    call `com.toasttab.promo.client.PromoClient.validateSingleUsePromo` to confirm that the promo code
+    either isn't single-use or hasn't been used already by the current guest if it is.
+```
 
 ## Understanding a requested change
 
@@ -75,7 +89,7 @@ A non-exhaustive list of repos we commonly work in:
 
 ### Repo types
 
-Use one of these values in the `Type` column of your output table:
+Use one of these values in the `type` field of each entry in your output:
 
 | Type | Description |
 |------|-------------|
@@ -89,12 +103,27 @@ Use one of these values in the `Type` column of your output table:
 ## Dependencies
 
 If one or more of your planned code changes must be made sequentially after another one of your planned code changes,
-add a `Depends on` column to your table, e.g.
+add a `depends_on` field to those entries, e.g.
 
-| Service | Type | Changes needed                                                                                                                                                                                                                                                                                                                                                                          | Depends on    |
-|---------|------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------|
-| promo-service | backend | Implement `validateSingleUsePromo` REST endpoint and add it to `PromoClient` which confirms that the promo code either isn't single-use or hasn't been used already by the current guest if it is. | none          |
-| do-checkout | Backend | Add a GraphQL mutation on the guest supergraph which takes in a string promo code and applies it to the check by calling `com.toasttab.orders.client.OrderClient.applyPromoCode`. Before applying, call `com.toasttab.promo.client.PromoClient.validateSingleUsePromo` to confirm that the promo code either isn't single-use or hasn't been used already by the current guest if it is. | promo-service |
+```yaml
+- repo: promo-service
+  type: Backend
+  goal: Expose a way to check whether a single-use promo code is still redeemable.
+  changes: >
+    Implement a `validateSingleUsePromo` REST endpoint and add it to `PromoClient`, which confirms that
+    the promo code either isn't single-use or hasn't been used already by the current guest if it is.
+  depends_on: none
+
+- repo: do-checkout
+  type: Backend
+  goal: Let a guest apply a promo code to their check.
+  changes: >
+    Add a GraphQL mutation on the guest supergraph which takes in a string promo code and applies it
+    to the check by calling `com.toasttab.orders.client.OrderClient.applyPromoCode`. Before applying,
+    call `com.toasttab.promo.client.PromoClient.validateSingleUsePromo` to confirm that the promo code
+    either isn't single-use or hasn't been used already by the current guest if it is.
+  depends_on: promo-service
+```
 
 ## Output
 

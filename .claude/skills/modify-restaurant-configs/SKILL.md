@@ -5,8 +5,9 @@ description: |
   edit, or archive a service charge, alternate payment method (other payment type / APM),
   dining option, discount, or any other restaurant config — and then publish it so the
   change is live. Covers finding a usable endpoint (toastweb admin form vs. an
-  @AdminAuthorization/@CustomerAuthorization service endpoint), the toastweb CSRF/session
+  @AdminAuthorization/@CustomerAuthorization service endpoint), the toastweb CSRF/cookie-jar
   dance, publishing via quickApplyConfigChanges, and verifying against published config.
+  Requires a restaurant session first — see the toastweb-restaurant-session skill.
   Triggers on "create an other payment type at <restaurant>", "add a service charge in
   preprod", "archive that payment method", "publish this config change".
   Do NOT use for prod — this is a preprod tool.
@@ -51,65 +52,14 @@ path, which is the same thing the human UI does.
 
 **Do this first, before any admin-form GET.** A Toast admin bearer carries no restaurant
 context, so without a session at your target restaurant the admin routes **403** even though
-the token is perfectly valid. This is PCR customer access, not a broken token.
+the token is perfectly valid.
 
-The tell is that the 403 is *restaurant-scoped, not route-scoped*: the same route returns 200
-at a restaurant you already have a session at and 403 at one you don't.
-`/restaurants/admin/dashboard` returns 200 either way, so it is **not** a useful probe —
-use a payments admin route to test.
+Use the **/toastweb-restaurant-session** skill. It covers telling a restaurant-scoped 403 apart
+from an annotation 403, creating the session, and listing/extending/terminating it. Sessions
+last ~1 hour, so on a long task extend rather than re-diagnosing a sudden mid-run 403.
 
-No browser and no fresh token are needed — two API calls:
-
-```bash
-TOKEN=$(python3 .../toastweb-token/toastweb_token.py token preprod 2>/dev/null)
-RX=f86294ec-3c79-4f23-bd41-c71b525f3bd6
-G=https://ws-preprod-api.eng.toasttab.com
-
-# 1. Management set GUID (the session is scoped to the management set, not the restaurant)
-curl -s -H "Authorization: Bearer $TOKEN" -H "Toast-Restaurant-External-ID: $RX" \
-  "$G/config/v2/restaurantConfigs"        # -> restaurant.managementSet.guid
-
-# 2. Create the session
-curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -H "Toast-Restaurant-External-ID: $RX" \
-  -d '{"managementSet":"<mgmtSetGuid>","businessJustification":"preprod testing","restaurant":"'$RX'"}' \
-  "$G/policy-administration/v1/customer-sessions"
-```
-
-Returns the session: `{"id":...,"managementSet":...,"expiration":<epoch secs>,"justification":...,"restaurant":...}`.
-The previously-403ing routes return 200 **immediately** — the existing token starts working
-as soon as the session exists.
-
-Managing sessions (all `@AdminAuthorization`, so a user token works):
-
-| Call | Purpose |
-|---|---|
-| `GET /policy-administration/v1/customer-sessions` | list your active sessions — check here first |
-| `POST /policy-administration/v1/customer-sessions` | create (needs `ACCESS_ANY_RESTAURANT_BIT`) |
-| `PATCH /policy-administration/v1/customer-sessions/{id}` | extend (resets to a fresh hour) |
-| `DELETE /policy-administration/v1/customer-sessions/{id}` | terminate |
-
-Notes:
-* Sessions last **~1 hour**. On a long task, re-check `GET` and `PATCH` to extend rather than
-  re-diagnosing a sudden 403 mid-run.
-* When a session lapses, the admin GET still returns a **200-looking HTML body** — it's the
-  `<title>Forbidden</title>` page, ~28 KB versus ~130 KB for a real form. Your scrape then
-  fails with `AttributeError: 'NoneType'` on the regex, which looks like a parsing bug but
-  is an auth problem. Check the page title before blaming the scrape.
-* `businessJustification` is free text and gets normalized (spaces to underscores:
-  `preprod testing` → `preprod_testing`). It's logged for compliance — write something true.
-* `POST .../customer-sessions/restricted` is the variant for users *without*
-  `ACCESS_ANY_RESTAURANT_BIT`; it additionally requires you to already be a `RestaurantUser`
-  there. Prefer the plain `POST`.
-* The equivalent human flow is Toast Administration (`/toast/admin`) → request customer
-  access; toastweb's own routes for it are `GET /toast/admin/customer-access` (Salesforce
-  case/project deep-link) and `GET /toast/admin/render/customer-access/switch/{ruleGuid}`
-  (switch into an existing session). You don't need either when driving the API directly.
-* Don't bother trying to log into `preprod.eng.toasttab.com` with Playwright: the bearer
-  already authenticates toastweb's HTML routes, and the SSO path dead-ends on an
-  organization-name prompt.
-* Host note: toastweb UI is `preprod.eng.toasttab.com`; `ws-preprod-api.eng.toasttab.com` is
-  the API gateway. Hitting toastweb UI routes on the gateway host 401s/404s.
+Host note: toastweb UI is `preprod.eng.toasttab.com`; `ws-preprod-api.eng.toasttab.com` is
+the API gateway. Hitting toastweb UI routes on the gateway host 401s/404s.
 
 ## Driving a toastweb admin form
 
@@ -205,7 +155,7 @@ Notes and gotchas:
   **asynchronously** (`{"message":"Publishing has started..."}`) — you'd have to poll.
   Prefer `quickApplyConfigChanges` so you know when it's done.
 * All are gated on `PUBLISHING_BIT`. A 403 usually means you have no customer-access session
-  at that restaurant (or it expired) — create one per the session section above and retry
+  at that restaurant (or it expired) — create one via **/toastweb-restaurant-session** and retry
   with the **same** token. No need to re-mint.
 
 ## Verifying
@@ -333,9 +283,9 @@ After archiving, the APM disappears from the list page and from published
 ## Behaviors
 
 * **Preprod only.** Don't run these against prod.
-* **Check for a customer-access session at the target restaurant before anything else**
-  (`GET /policy-administration/v1/customer-sessions`) and create one if it's missing. Doing
-  this first avoids misreading a session 403 as a wrong endpoint or a bad token.
+* **Get a customer-access session at the target restaurant before anything else** via
+  **/toastweb-restaurant-session**. Doing this first avoids misreading a session 403 as a wrong
+  endpoint or a bad token.
 * Confirm with the user before any mutating call, showing the resolved URL, headers (token
   redacted), and exact body.
 * **Never send a mutating request you've described as a probe, dry run, or aborted.** If you
