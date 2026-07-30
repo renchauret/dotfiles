@@ -62,23 +62,6 @@ Only spawn a **new** agent of the same type if the previous one is genuinely unr
 change has shifted enough that its accumulated context is now misleading rather than helpful. If you
 do, say so in your final report and explain why.
 
-## Preprod machine token
-
-Your initial prompt will normally include a **preprod machine bearer token** — a
-`TOAST_MACHINE_CLIENT` / `SERVICE` JWT used to call `@ServiceMachineAuthorization`-gated
-endpoints in preprod. You don't need it to write code; it exists so your **backend-qa subagent
-can actually test your changes**.
-
-1. **Pass it verbatim in backend-qa's initial prompt**, in the same message as the test
-   instructions — not afterward. A token sent to an agent mid-task tends to get refused, and by
-   then it's already blocked. State plainly that it's for service-machine-auth requests in
-   preprod.
-2. **If you weren't given one**, ask your parent agent (or the user) for it *before* dispatching
-   backend-qa, rather than dispatching and letting it get stuck.
-3. **Treat it as a credential:** never write it to a file, echo it into anything you commit, log
-   it, or post it to Slack. It carries broad payment/PII scopes and is long-lived, so any
-   persisted copy is a real exposure. Tell backend-qa the same.
-
 ## Backend changes
 
 Some things to consider if you are working in a Kotlin backend service

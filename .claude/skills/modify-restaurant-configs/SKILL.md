@@ -4,10 +4,10 @@ description: |
   Use when a task needs a preprod restaurant to have a different configuration — create,
   edit, or archive a service charge, alternate payment method (other payment type / APM),
   dining option, discount, or any other restaurant config — and then publish it so the
-  change is live. Covers finding a usable endpoint (toastweb admin form vs. an
-  @AdminAuthorization/@CustomerAuthorization service endpoint), the toastweb CSRF/cookie-jar
+  change is live. Covers finding a usable endpoint (toastweb admin form vs. a service endpoint,
+  including @ServiceMachineAuthorization ones via an M2M token), the toastweb CSRF/cookie-jar
   dance, publishing via quickApplyConfigChanges, and verifying against published config.
-  Requires a restaurant session first — see the toastweb-restaurant-session skill.
+  Authenticate every request via the authenticate-request skill.
   Triggers on "create an other payment type at <restaurant>", "add a service charge in
   preprod", "archive that payment method", "publish this config change".
   Do NOT use for prod — this is a preprod tool.
@@ -24,42 +24,69 @@ that is live on the POS — not merely saved/staged.
 Trident (GUID `326fa596-0d90-48f3-b3ee-12862841ef8a`, numeric id `254000000000000`) is
 usually a good test restaurant.
 
-## Finding an endpoint you can actually call
+## Finding an endpoint to call
 
-Your bearer is a **toastweb user token** (`/toastweb-token`, or `/call-toast-api` which
-fetches one internally). That token can reach exactly two kinds of surface:
+Three surfaces can write config. Pick by what the resource is annotated with, then
+authenticate it via **/authenticate-request**:
 
-1. A **toastweb endpoint or admin form** (`preprod.eng.toasttab.com`).
-2. A **non-toastweb endpoint or GraphQL mutation** tagged `@CustomerAuthorization` or
-   `@AdminAuthorization`.
-
-Endpoints tagged **only** `@ServiceMachineAuthorization` are unreachable — a user token
-403s on them, including their GETs. Note this is a *different* 403 from the missing-session
-one below: annotation 403s fail at every restaurant, session 403s fail only where you lack a
-session. Check which you're facing before rewriting the request. Check the
-resource class's annotations on Sourcegraph *before* building a request: a class-level
-`@ServiceMachineAuthorization` with no admin/customer annotation beside it means look
-elsewhere, not that your request is malformed.
+1. A **service endpoint or GraphQL mutation** tagged `@CustomerAuthorization` or
+   `@AdminAuthorization` — user token (session only for the customer case).
+2. A **service endpoint tagged `@ServiceMachineAuthorization`** — an **M2M token**
+   (`preprod-m2m bearer`). These are reachable; see below.
+3. A **toastweb endpoint or admin form** (`preprod.eng.toasttab.com`) — user token + a
+   customer-access session at the restaurant.
 
 Use Sourcegraph to locate the config's write path. Search the entity name (e.g.
 `AlternatePaymentType`, `ServiceCharge`) across `*Resource.kt|java` for the service path,
-and across `conf/routes` + `app/controllers` in `toastweb` for the admin form. When a
-service's REST API is machine-only, **toastweb's admin form is usually the only
-user-authorized way to write the config** — and it writes through toastweb's own JPA
-path, which is the same thing the human UI does.
+and across `conf/routes` + `app/controllers` in `toastweb` for the admin form. **Read the
+annotation on the resource class and method before building a request** — it tells you which
+token to mint, and a method-level annotation entirely replaces the class-level one.
 
-## Starting a preprod toastweb session at the restaurant
+### Machine-only endpoints are reachable with an M2M token
 
-**Do this first, before any admin-form GET.** A Toast admin bearer carries no restaurant
-context, so without a session at your target restaurant the admin routes **403** even though
-the token is perfectly valid.
+A class-level `@ServiceMachineAuthorization` with no admin/customer annotation beside it does
+**not** mean look elsewhere. Mint an M2M token instead:
 
-Use the **/toastweb-restaurant-session** skill. It covers telling a restaurant-scoped 403 apart
-from an annotation 403, creating the session, and listing/extending/terminating it. Sessions
-last ~1 hour, so on a long task extend rather than re-diagnosing a sudden mid-run 403.
+```bash
+curl -s -H "Authorization: Bearer $(preprod-m2m bearer)" \
+  -H "Toast-Restaurant-External-ID: $RX" \
+  "https://ws-preprod-api.eng.toasttab.com/<service>/v1/<path>"
+```
+
+Machine tokens carry **per-scope** grants, so a 403 here is usually a **missing scope, not the
+wrong token type**. Read the annotation's `scopes` and check the token actually holds it before
+concluding the endpoint is closed — the granularity is per-verb, so holding a `:create` scope tells
+you nothing about `:read` on the same resource. Decode the token's `scope` claim to check.
+
+If the scope is genuinely missing, ask ren to add it to his service client, then re-mint
+(`preprod-m2m login`). See /authenticate-request for the details.
+
+Prefer the machine path when it exists: it's a single request against the service's real API,
+versus toastweb's scrape-and-POST. Fall back to the admin form when no scope can be granted, or
+when the service has no write API at all — toastweb writes through its own JPA path, the same
+thing the human UI does.
+
+## Session for toastweb admin forms
+
+**Do this first, before any admin-form GET.** A user bearer carries no restaurant context, so
+without a session at your target restaurant the admin routes **403** even though the token is
+perfectly valid. Only toastweb forms and `@CustomerAuthorization` endpoints need this — M2M and
+`@AdminAuthorization` calls do not.
+
+Use **/authenticate-request** to mint the token and create the session
+(`preprod createSession --restaurant <restaurantGuid>`). It also covers listing/extending a
+session and telling a session 403 apart from an annotation or scope 403.
 
 Host note: toastweb UI is `preprod.eng.toasttab.com`; `ws-preprod-api.eng.toasttab.com` is
 the API gateway. Hitting toastweb UI routes on the gateway host 401s/404s.
+
+**When a session lapses, the admin GET still returns a 200-looking HTML body** — it's the
+`<title>Forbidden</title>` page, ~28 KB versus ~130 KB for a real form. Your scrape then fails with
+`AttributeError: 'NoneType'` on the regex, which looks like a parsing bug but is an auth problem.
+Check the page title before blaming the scrape.
+
+Don't try to log into `preprod.eng.toasttab.com` with Playwright: the bearer already authenticates
+toastweb's HTML routes, and the SSO path dead-ends on an organization-name prompt.
 
 ## Driving a toastweb admin form
 
@@ -77,7 +104,7 @@ Every mutating admin form needs, beyond the bearer:
 So the pattern is always **GET the form page, scrape, POST with the same jar**:
 
 ```bash
-TOKEN=$(python3 .../toastweb-token/toastweb_token.py token preprod 2>/dev/null)
+TOKEN=$(preprod bearer)
 RX=326fa596-0d90-48f3-b3ee-12862841ef8a
 
 curl -s -c /tmp/tw.cookies -o /tmp/form.html \
@@ -148,20 +175,21 @@ Notes and gotchas:
 * This is a **full restaurant publish** — every pending config change at that restaurant
   goes out with yours, not just the one you made. Toastweb exposes no partial-publish route
   for general configs (only `/toast/admin/payments/servicecharge/partialPublish` for service
-  charges), and services' own partial-publish paths are `@ServiceMachineAuthorization`-only.
+  charges). Services' own partial-publish paths are `@ServiceMachineAuthorization`, so they are
+  an option with an M2M token if you hold the scope and need to avoid a full publish.
 * `POST /restaurants/admin/quickPublish` looks like the right route but **403s** with a
   bearer token. Use `quickApplyConfigChanges`.
 * `POST /restaurants/admin/applyConfigChanges` takes the same params but publishes
   **asynchronously** (`{"message":"Publishing has started..."}`) — you'd have to poll.
   Prefer `quickApplyConfigChanges` so you know when it's done.
 * All are gated on `PUBLISHING_BIT`. A 403 usually means you have no customer-access session
-  at that restaurant (or it expired) — create one via **/toastweb-restaurant-session** and retry
+  at that restaurant (or it expired) — create one via **/authenticate-request** and retry
   with the **same** token. No need to re-mint.
 
 ## Verifying
 
 Always verify against the **published** config read, not the saved/staged one, and not the
-admin HTML you just posted to. For alternate payment types, via `/call-toast-api`:
+admin HTML you just posted to. For alternate payment types:
 
 ```
 GET https://ws-preprod-api.eng.toasttab.com/config/v2/alternatePaymentTypes
@@ -169,20 +197,35 @@ GET https://ws-preprod-api.eng.toasttab.com/config/v2/alternatePaymentTypes
 ```
 
 The `config` service's `v2` config reads are `@AdminAuthorization`/`@CustomerAuthorization`,
-so a user token works on them even when the owning service's write API doesn't.
-`GET /config/v2/restaurantConfigs` returns the restaurant's core config (name, numeric id,
-management set GUID) and is a handy sanity check.
+so a user token works on them even when the owning service's write API doesn't. They also work
+with an M2M token holding `config:read`. `GET /config/v2/restaurantConfigs` returns the
+restaurant's core config (name, numeric id, management set GUID) and is a handy sanity check.
 
 ## Alternate payment methods (APMs / other payment types)
 
-An APM is an `AlternatePaymentType`, called an "other payment type" in the POS UI. There is
-**no user-authorized REST API to create one.** `toast-payments-config`'s
-`AlternatePaymentTypeResource` (`POST /payments-config/v1/alternatePaymentType`) is
-`@ServiceMachineAuthorization`-only — even its GET 403s with a user token. Nor is there any
-other path: order-routing's create is `@AdminAuthorization` but only mints its own
-"Paid at …" type for routing-enabled restaurants; toast-pms-provider handles hotel
-*mappings*, not the APT; payments-config's GraphQL subgraph has mutations only for GFD
-config. Use toastweb's admin form.
+An APM is an `AlternatePaymentType`, called an "other payment type" in the POS UI. Two ways to
+create one:
+
+**Preferred — `toast-payments-config`'s REST API with an M2M token.**
+`AlternatePaymentTypeResource` is `@ServiceMachineAuthorization`, so a *user* token 403s on it,
+but `preprod-m2m bearer` reaches it:
+
+| Call | Scope required |
+|---|---|
+| `POST /payments-config/v1/alternatePaymentType` | `payments.alternate-type:create` |
+| `GET /payments-config/v1/alternatePaymentType` | `payments.alternate-type:read` |
+
+ren's client holds both. The GET requires a non-empty `restaurantSetIds` query param — omitting it
+returns 400, not 403.
+
+**Fallback — toastweb's admin form.** Use this when you can't get the scope. No other service
+path exists: order-routing's create is `@AdminAuthorization` but only mints its own "Paid at …"
+type for routing-enabled restaurants; toast-pms-provider handles hotel *mappings*, not the APT;
+payments-config's GraphQL subgraph has mutations only for GFD config.
+
+Either way the write is **saved, not live** — publish and verify afterward.
+
+### Toastweb APM routes
 
 Routes (all under toastweb's catch-all `* /restaurants/admin/payments/{action}`):
 
@@ -197,7 +240,7 @@ Routes (all under toastweb's catch-all `* /restaurants/admin/payments/{action}`)
 Note the two distinct submit routes: singular `paymenttypesubmit` for one APM, plural
 `paymenttypessubmit` for the list.
 
-### Creating an APM
+### Creating an APM via the toastweb form
 
 GET the blank form (`/paymentType` with **no** `id`), then POST its own defaults to
 `paymenttypesubmit` changing only `paymentType.name`. `paymentType.restaurantSet.id` and
@@ -283,9 +326,13 @@ After archiving, the APM disappears from the list page and from published
 ## Behaviors
 
 * **Preprod only.** Don't run these against prod.
-* **Get a customer-access session at the target restaurant before anything else** via
-  **/toastweb-restaurant-session**. Doing this first avoids misreading a session 403 as a wrong
-  endpoint or a bad token.
+* **Authenticate via /authenticate-request.** Read the resource's annotation first, then mint the
+  matching token — user (`preprod bearer`) or M2M (`preprod-m2m bearer`).
+* **Before driving a toastweb form or a `@CustomerAuthorization` endpoint, get a customer-access
+  session at the target restaurant.** Doing this first avoids misreading a session 403 as a wrong
+  endpoint or a bad token. M2M and `@AdminAuthorization` calls don't need one.
+* **On a 403 from a machine endpoint, check the scope before giving up.** `@ServiceMachineAuthorization`
+  no longer means unreachable; it usually means a scope ren needs to grant.
 * Confirm with the user before any mutating call, showing the resolved URL, headers (token
   redacted), and exact body.
 * **Never send a mutating request you've described as a probe, dry run, or aborted.** If you

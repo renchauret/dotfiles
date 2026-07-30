@@ -12,31 +12,23 @@ Given a requested change, often a JIRA ticket, plan it and implement it using su
 
 ## Process
 
-1. Use an implementation-planner subagent to plan the code changes needed. Pass them the ticket or a description of the requested changes
-2. implementation-planner will return a list of repos and code changes necessary in each repo
+1. If only a description of the desired changes was given, and you were prompted directly by a user ask if the user would like to create a ticket
+   1. If yes:
+      1. Create a DOCT JIRA ticket
+      2. Put it in the active sprint
+      3. Assign the current user to it
+      4. Move it to In Development
+2. Use an implementation-planner subagent to plan the code changes needed. Pass them the ticket or a description of the requested changes
+3. implementation-planner will return a list of repos and code changes necessary in each repo
    1. It also saves this information in the JIRA ticket description, if a ticket was provided
-3. For each repo, dispatch an implementer subagent in the background to implement the changes needed
+4. For each repo, dispatch an implementer subagent in the background to implement the changes needed
    1. Pass the implementer the exact changes the implementation-planner specified for that repo
    2. The implementer also works with its own reviewer and qa subagents to ensure that code quality standards are met.
    3. Dispatch implementers in parallel unless there are dependent changes (see below)
-4. The implementers will create draft PRs and give you the links when they are finished
-   1. dispatch 1 background subagent for each PR and instruct them to /monitor-pr in safe mode
-
-## Credentials for preprod testing
-
-QA subagents need a **preprod machine bearer token** to hit `@ServiceMachineAuthorization`-gated
-endpoints. Pass it in the subagent's **initial prompt**, not mid-flight — a token handed over
-partway through a task tends to get refused, and by then the agent is already blocked.
-
-1. **Ask ren for the preprod machine token up front** — once, before dispatching any implementer,
-   in the same breath as confirming the plan.
-2. **Pass it verbatim in the initial prompt** of every implementer (which forwards it to its qa
-   subagent) and of any qa subagent you dispatch directly.
-3. **If an agent gets blocked needing a token**, restart it with the token in its opening prompt
-   rather than sending it along afterward.
-4. **Treat it as a credential.** Instruct agents not to write it to disk, echo it into anything
-   committed, log it, or post it to Slack. It is broadly scoped (payments, guest-profiles,
-   credit-cards) and long-lived, so a persisted copy is a real exposure.
+5. The implementers will create draft PRs and give you the links when they are finished
+   1. Dispatch 1 background subagent for each PR and instruct them to /monitor-pr in safe mode
+6. Once all PRs have merged (all /monitor-pr subagents have finished), if there is a JIRA ticket for this work, move it to Closed, with Fix version set to "n/a"
+   1. This fix version should already exist in the DOCT project
 
 ## Dependent changes
 

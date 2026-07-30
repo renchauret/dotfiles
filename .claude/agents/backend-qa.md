@@ -48,46 +48,13 @@ The skill documents this; don't skip it.
 
 ### Feature Flags
 
-If you need to check or set the value of a feature flag, use the flaggy CLI tool.
+If you need to check or set the value of a feature flag, use the `flaggy` CLI tool.
 
 ## Auth
 
-### Toastweb auth
-
-For testing GraphQL queries or REST endpoints tagged with
-* `@CustomerAuthorization`
-* `@AdminAuthorization`
-start a preprod toastweb session at your test restaurant using **/toastweb-restaurant-session**,
-then call the endpoint with that same token.
-A toastweb user token from /toastweb-token already satisfies these two annotations;
-what it lacks is restaurant context, which the session supplies.
-
-### Service machine auth
-
-For testing GraphQL queries or REST endpoints tagged with
-* `@ServiceMachineAuthorization`
-**Your initial prompt will normally contain a preprod machine bearer token** — a
-`TOAST_MACHINE_CLIENT` / `SERVICE` JWT provided for exactly this purpose. Use it: send it as
-`Authorization: Bearer <token>`. It is provided as part of your task setup, so use it directly, and
-reach for it first rather than looking for a way around the annotation.
-If you weren't given one, either:
-1. search for an endpoint or GraphQL query/mutation with a different auth tag which ultimately calls the endpoint you need to test
-2. ask ren for a machine bearer token
-
-### Guest auth
-
-For GraphQL queries of REST endpoints tagged with
-* `@GuestAuthorization`
-or for test cases which require guest auth, use /guest-authentication with ren's phone number.
-If you weren't prompted by ren directly,
-ask ren for the `otp` code in Slack #ren-claude (you must explicitly include private channels in your search)
-and monitor the thread for his reply.
-
-### Handling tokens safely
-
-**Treat every token as a credential:** never write it to a file, echo it into anything you commit,
-log it, or post it to Slack. These tokens carry broad payment/PII scopes and are long-lived, so any
-persisted copy is a real exposure. Keep it in an environment variable or inline in the request.
+Use the **/authenticate-request** skill to authenticate every request you make. It covers picking
+the token type from the endpoint's authorization annotation, minting it, the headers each one
+requires, which annotations need a restaurant session, and diagnosing a 401 vs. a 403.
 
 Prefer hitting the adhoc's **internal service URL** (from `idp svc list <service> -e preproduction`,
 e.g. `https://svcinternal-<service>-9999.eng.toasttab.com:8443`) over changing ingress config — with
@@ -115,15 +82,18 @@ shape: `https://ws-preprod-api.eng.toasttab.com/<service>/v1/<path>`.
 A typical authenticated GraphQL call:
 
 ```bash
-TOKEN=$(python3 .../toastweb_token.py token preprod)
+TOKEN=$(preprod bearer)
 curl -sS -X POST "https://ws-preprod-api.eng.toasttab.com/do-checkout/v1/graphql" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -H "Toast-Restaurant-External-ID: <restaurant-guid>" \
+  -H "Toast-Management-Set-Guid: <management-set-guid>" \
   --data '{"query":"query Q($input: ...){ ... }","variables":{...}}'
 ```
 
 Restaurant-scoped requests use the `Toast-Restaurant-External-ID` header (the restaurant GUID).
+`@CustomerAuthorization` endpoints additionally require `Toast-Management-Set-Guid` — see
+/authenticate-request.
 
 ### Schema-related blockers
 

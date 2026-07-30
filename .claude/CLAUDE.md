@@ -29,6 +29,7 @@
 
 * If you need to check or set the value of a feature flag, use the flaggy CLI tool.
 * If you need to check or manage builds and deployments, use the idp CLI tool.
+* When a skill asks you to use /guest-authentication, use /self-guest-authentication instead, unless explicitly instructed otherwise
 
 ## Creating PRs
 
